@@ -105,5 +105,44 @@ ICPMS_Merged
 #ISTD_Data <- filter(ICPMS_Merged, Metal== "Ge72") 
 #Sample_Data <- filter(ICPMS_Merged, Metal!= "Ge72")
 #ICPMS_Data <- mutate(Sample_Data, CPS_corrected = Sample_Data$CPS/ISTD_Data$CPS, RSD_corrected = Sample_Data$RSD/ISTD_Data$RSD)
+```
 
+*Correct Code: Utilizes "for loops" to insure proper matching*
+```{r ISTD correction}
+#This code chunk also performs the ISTD correction, however it uses a for loop to insure proper matching of ISTD to sample reading
+#Note: There is a Ge72 CPS value for each sample key and the correct code sorts by Sample Key when subtracting the ISTD CPS Value
+
+##Designing a "for loop"
+
+#1) assign a blank dataframe; this allows the data to be combined together between iterations of the loop
+Data_ICPMS <- NULL #This creates a blank dataframe for which the corrected data can be added to!
+
+
+#2) Find the unique iterations in the Sample Key
+unique_IDs <- unique(ICPMS_Merged$`Sample Key`)
+
+#3) Start the for loop 
+for(ID in unique_IDs){
+  #This loop performs the ISTD correction for each sample key and 
+  #then adds the corrected data together between iterations
+
+  #4) Filter the sample data for ISTD data and by each iteration in the unique Sample Keys
+  #Note: The ISTD Data should ONLY consist of unique Sample Keys
+  
+  ISTD <- filter(ICPMS_Merged, Metal == "Ge72", `Sample Key`==ID)
+  Sample <- filter(ICPMS_Merged, Metal != "Ge72",`Sample Key`==ID)
+  
+  #5) Correct the CPS and RSD readings
+  corrected <- mutate(Sample,
+                      CPS_corrected = Sample$CPS / ISTD$CPS,
+                      RSD_corrected = Sample$RSD / ISTD$RSD)
+  
+#6) Bind together the Corrected data
+  Data_ICPMS <- rbind(Data_ICPMS, corrected)
+}
+
+#7) Preview the Corrected Data
+Data_ICPMS
+
+#all(Data_ICPMS==ICPMS_Data) #This proves the original CPS correction code does not properly match the ISTD CPS readings to the Sample CPS readings! output= FALSE shows that the data improperly matches!! 
 ```
