@@ -149,3 +149,63 @@ Data_ICPMS
 ---------------
 #ICPMS Analysis
 
+6) ICPMS calibration
+```{r Calibration function}
+
+#Designing a function for the calibration
+
+#Note: for correcting errors in a function try running the same code as not a function!
+  #i.e. 
+    #cal<- function(input){x*input}
+    #cal(10)
+    #cal(11)
+    #cal(12)
+  #would become:  
+    #input <- 10
+    #x*input
+  #Where the input is any arbitrary input (just to test the code!)
+
+Calibrate_ICPMS <- function(metal){ 
+  #input= metal type as a character i.e. metal= "Pb208"
+  #This function creates a calibration curve for each of the metals and outputs the plot and a dataframe 
+  #with the metal, slope, slope std, intercept and intercept std
+  
+  
+#The following code filters the data for the calibrations and for the metal input
+#and selects the relevant information (Concentration, CPS, RSD)
+
+Calibration_data <- Data_ICPMS %>% 
+  filter(Type == "Cal1" | Type== "Cal2" | Type == "Cal3") %>% 
+  filter(Metal == metal) %>%
+  select(conc = Concentration, signal = CPS_corrected, RSD = RSD_corrected)
+  #The concentrations are in units of Kg/mL
+
+#The following code comes from Modern Analytical Chemistry by David Harvey
+w <- 1/(signal*RSD)^2 #calculates the weight for the linear regression
+model <- lm(signal ~ conc, weights= w) #models the weighted linear regression 
+
+
+#The following code extracts relevant information from the summary of the model
+slope_data <- model$coefficients[2] #This pulls out the slope
+intercept_data <- model$coefficients[1] #This pulls out the intercept
+slope_STD <- summary(model)$coefficients[2,2] #This pulls out the slope standard deviation
+intercept_STD <- summary(model)$coefficients[1,2] #This pulls out the intercept 
+
+#The following code helps to prevent future errors by coercing the data into numeric format
+Slope_num <- as.numeric(slope_data) #This fixes the formatting of the slope 
+Intercept_num <- as.numeric(intercept_data) #This fixes the formatting of the intercept 
+Slope_STD_num <- as.numeric(slope_STD) #This fixes the formatting of the slope STD
+Intercept_STD_num <- as.numeric(intercept_STD) #This fixes the formatting of the intercept STD
+
+#The following code plots the calibration curve
+plot(signal~conc, #This defines the model to be plotted
+     xlab=paste("Concentration of ", metal,"(ppb)"), #This creates the X axis label,
+     #paste() is used to allow  the metal type to be called mid-text
+     ylab= "Counts per second")+ #Y axis label
+     abline(model, col="red")+ #This adds a red line with the previosly defined model as the equation
+     title(paste("Calibration for", metal)) #This puts a title on the graph
+
+#Finally the function ends by defining a dataframe that contains all of the relevant information from the calibration
+equation <- data.frame(Metal= metal, Slope= Slope_num, Slope_STD = Slope_STD_num, Intercept = Intercept_num, Intercept_STD = Intercept_STD_num)
+} 
+```
