@@ -21,6 +21,32 @@ library(tidyverse)
 library(readr)
 ```
 
+1) Importing the Data
+```{r data import, warning=FALSE, message=FALSE}
+#Importing the relevant data into the R markdown file
+
+##Before running this code make sure to upload the data onto the RStudio server 
+##or save the data files in an appropriate location for desktop versions of R
+
+##To resolve error messages about the data path set the working directory as the location where the data is saved.
+
+#FAAS Data
+AA_imported <- read_csv("data/AA_Data.csv", skip=4) 
+#skip refers to the number of rows in the data file before the column headers
+
+#ICPMS Data
+ICPMS_imported <- read_csv("data/ICPMS_Data.csv", skip=1)
+#This data frame will only be used for matching the correct columns to the correct metals
+
+#Sample Key
+sample_key_imported <- read_csv("data/Sample_Key.csv", skip=0)
+
+#The following code previews each of the imported data frames
+AA_imported
+ICPMS_imported
+sample_key_imported
+```
+
 #Data Tidying
 
 2) Tidying the RSD Data
@@ -29,7 +55,7 @@ library(readr)
 #this is done separately from the overall data tidying to ensure the RSD values 
 #are properly matched to the correct sample reading (CPS)
 
-RSD_Data<-ICPMS_Imported %>%
+RSD_data<-ICPMS_imported %>%
   #first the RSD columns are selected and renamed with the appropriate metal isotope
   select(Cr52 ='CPS RSD', 
          Cr53 ='CPS RSD_1', 
@@ -44,20 +70,20 @@ RSD_Data<-ICPMS_Imported %>%
   
   #then the newly renamed RSD columns are gathered together and 
   #a column is created to indicate which metal corresponds to which RSD
-  gather(Cr52, Cr53, As75, Cd111, Cd114, Pb208, Ge72, key = "Metal", value = "RSD")%>%
+  gather(Cr52, Cr53, As75, Cd111, Cd114, Pb208, Ge72, key = "metal", value = "RSD")%>%
   
-  #Then the RSD values are mutated to insure that they are in a numeric format,
+  #Then the RSD values are mutated to ensure that they are in a numeric format,
   #this helps prevent type related errors
   mutate(RSD=as.numeric(RSD))
 
 #Previewing the Tidy RSD Data
-RSD_Data
+RSD_data
 ```
 
 3) Tidying the CPS Data
 ```{r CPS ICPMS Tidying}
 #Tidying the CPS Data for ICPMS and combining back in the RSD data
-ICPMS_Tidy <- ICPMS_Imported %>% 
+ICPMS_tidy <- ICPMS_imported %>% 
   
   #Starting with renaming all of the CPS data with the appropriate metal
   rename(Cr52 = CPS,
@@ -67,33 +93,36 @@ ICPMS_Tidy <- ICPMS_Imported %>%
          Cd114 = CPS_4,
          Pb208 = CPS_5,
          Ge72 = CPS_7)%>% 
-  #Next gathering the CPS data and creating a column that indicates the coressponding metal 
-  gather(Cr52, Cr53, As75, Cd111, Cd114, Pb208, Ge72, key= "Metal", value="CPS")%>% 
+  #Next gathering the CPS data and creating a column that indicates the corresponding metal 
+  gather(Cr52, Cr53, As75, 
+         Cd111, Cd114, Pb208, Ge72, 
+         key= "metal", value="CPS")%>% 
   
   #Selecting the relevant columns 
   #this can be adjusted to fit the data analysis being performed
-  select('Sample Key', Metal, CPS)%>% 
+  select('Sample Key', metal, CPS)%>% 
   
   #mutating in the RSD data
-  mutate(RSD = RSD_Data$RSD)
+  mutate(RSD = RSD_data$RSD)
 
 
 #Confirming that the RSD data properly matches the CPS data
 #Should output TRUE if the data is properly matching 
-all(RSD_Data$'Sample Key'==ICPMS_Tidy$'Sample Key', RSD_Data$Metal==ICPMS_Tidy$Metal)
+all(RSD_data$'Sample Key'==ICPMS_tidy$'Sample Key', RSD_data$metal==ICPMS_tidy$metal)
 
 #Previewing the ICPMS Data
-ICPMS_Tidy
+ICPMS_tidy
 ```
 
 4) Merging in the Sample Key
 ```{r merging sample key}
 #Merging together the ICPMS Data and the Sample Key
-ICPMS_Merged <- merge(ICPMS_Tidy, Sample_Key_Imported)
+ICPMS_merged <- merge(ICPMS_tidy, sample_key_imported)
 
 #Previewing the merged data
-ICPMS_Merged
+ICPMS_merged
 ```
+#Data Processing
 
 5) Correcting for internal standard
 *Incorrect code*
@@ -115,11 +144,11 @@ ICPMS_Merged
 ##Designing a "for loop"
 
 #1) assign a blank dataframe; this allows the data to be combined together between iterations of the loop
-Data_ICPMS <- NULL #This creates a blank dataframe for which the corrected data can be added to!
+ICPMS <- NULL #This creates a blank dataframe for which the corrected data can be added to!
 
 
 #2) Find the unique iterations in the Sample Key
-unique_IDs <- unique(ICPMS_Merged$`Sample Key`)
+unique_IDs <- unique(ICPMS_merged$`Sample Key`)
 
 #3) Start the for loop 
 for(ID in unique_IDs){
@@ -129,8 +158,8 @@ for(ID in unique_IDs){
   #4) Filter the sample data for ISTD data and by each iteration in the unique Sample Keys
   #Note: The ISTD Data should ONLY consist of unique Sample Keys
   
-  ISTD <- filter(ICPMS_Merged, Metal == "Ge72", `Sample Key`==ID)
-  Sample <- filter(ICPMS_Merged, Metal != "Ge72",`Sample Key`==ID)
+  ISTD <- filter(ICPMS_merged, metal == "Ge72", `Sample Key`==ID)
+  Sample <- filter(ICPMS_merged, metal != "Ge72",`Sample Key`==ID)
   
   #5) Correct the CPS and RSD readings
   corrected <- mutate(Sample,
@@ -138,11 +167,11 @@ for(ID in unique_IDs){
                       RSD_corrected = Sample$RSD / ISTD$RSD)
   
 #6) Bind together the Corrected data
-  Data_ICPMS <- rbind(Data_ICPMS, corrected)
+  ICPMS <- rbind(ICPMS, corrected)
 }
 
 #7) Preview the Corrected Data
-Data_ICPMS
+ICPMS
 
 #all(Data_ICPMS==ICPMS_Data) #This proves the original CPS correction code does not properly match the ISTD CPS readings to the Sample CPS readings! output= FALSE shows that the data improperly matches!! 
 ```
@@ -208,4 +237,26 @@ plot(signal~conc, #This defines the model to be plotted
 #Finally the function ends by defining a dataframe that contains all of the relevant information from the calibration
 equation <- data.frame(Metal= metal, Slope= Slope_num, Slope_STD = Slope_STD_num, Intercept = Intercept_num, Intercept_STD = Intercept_STD_num)
 } 
+```
+
+
+```{r Calibration Simple, error=FALSE} 
+#Running the calibration function
+
+#The following code runs the calibration for each of the metals
+#This is the simplest way to perform this calibration, but not the most concise!
+
+
+cal_Cr52 <- Calibrate_ICPMS("Cr52") #The input of the Calibrate_ICPMS function is a metal as a character type
+cal_Cr53 <- Calibrate_ICPMS("Cr53")
+cal_As75 <- Calibrate_ICPMS("As75")
+cal_Cd111 <- Calibrate_ICPMS("Cd111")
+cal_Cd114 <- Calibrate_ICPMS("Cd114")
+cal_Pb208 <- Calibrate_ICPMS("Pb208")
+
+#The next code binds the calibration data together
+ICPMS_Cal <- rbind(cal_Cr52, cal_Cr53, cal_As75, cal_Cd111, cal_Cd114, cal_Pb208)
+
+#Previewing the Calibration data
+ICPMS_Cal
 ```
