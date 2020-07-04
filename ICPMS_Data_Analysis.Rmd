@@ -94,3 +94,16 @@ ICPMS_Merged <- merge(ICPMS_Tidy, Sample_Key_Imported)
 #Previewing the merged data
 ICPMS_Merged
 ```
+
+5) Correcting for internal standard
+*Incorrect code*
+```{r incorrect ISTD correction}
+#This was the original attempt for ISTD correction, unfortunately it improperly pairs the ISTD readings to the ICPMS Samples, later code is shown which utilizes a "for loop" to correct this mistake.
+
+#This code shows the danger of oversimplifying the data analysis; that it is important to confirm that the data is properly matching 
+
+#ISTD_Data <- filter(ICPMS_Merged, Metal== "Ge72") 
+#Sample_Data <- filter(ICPMS_Merged, Metal!= "Ge72")
+#ICPMS_Data <- mutate(Sample_Data, CPS_corrected = Sample_Data$CPS/ISTD_Data$CPS, RSD_corrected = Sample_Data$RSD/ISTD_Data$RSD)
+
+```
