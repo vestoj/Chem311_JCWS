@@ -137,14 +137,14 @@ ICPMS_merged
 ```
 
 *Correct Code: Utilizes "for loops" to insure proper matching*
-```{r ISTD correction}
+```{r ISTD correction, message=FALSE, warning=FALSE}
 #This code chunk also performs the ISTD correction, however it uses a for loop to insure proper matching of ISTD to sample reading
 #Note: There is a Ge72 CPS value for each sample key and the correct code sorts by Sample Key when subtracting the ISTD CPS Value
 
 ##Designing a "for loop"
 
 #1) assign a blank dataframe; this allows the data to be combined together between iterations of the loop
-ICPMS <- NULL #This creates a blank dataframe for which the corrected data can be added to!
+Data_ICPMS <- NULL #This creates a blank dataframe for which the corrected data can be added to!
 
 
 #2) Find the unique iterations in the Sample Key
@@ -167,11 +167,11 @@ for(ID in unique_IDs){
                       RSD_corrected = Sample$RSD / ISTD$RSD)
   
 #6) Bind together the Corrected data
-  ICPMS <- rbind(ICPMS, corrected)
+  Data_ICPMS <- rbind(Data_ICPMS, corrected)
 }
 
 #7) Preview the Corrected Data
-ICPMS
+Data_ICPMS
 
 #all(Data_ICPMS==ICPMS_Data) #This proves the original CPS correction code does not properly match the ISTD CPS readings to the Sample CPS readings! output= FALSE shows that the data improperly matches!! 
 ```
