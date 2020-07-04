@@ -23,30 +23,65 @@ library(readr)
 
 #Data Tidying
 
-1) Importing the Data
-```{r data import, warning=FALSE, message=FALSE}
-#Importing the relevant data into the R markdown file
+2) Tidying the RSD Data
+```{r Tidying RSD Data, warning=FALSE, message=FALSE}
+#This code chunk tidies the ICPMS RSD data
+#this is done separately from the overall data tidying to ensure the RSD values 
+#are properly matched to the correct sample reading (CPS)
 
-##Before running this code make sure to upload the data onto the RStudio server 
-##or save the data files in an appropriate location for desktop versions of R
+RSD_Data<-ICPMS_Imported %>%
+  #first the RSD columns are selected and renamed with the appropriate metal isotope
+  select(Cr52 ='CPS RSD', 
+         Cr53 ='CPS RSD_1', 
+         As75 ='CPS RSD_2', 
+         Cd111 ='CPS RSD_3', 
+         Cd114 ='CPS RSD_4', 
+         Pb208='CPS RSD_5',
+         Ge72 ='CPS_7',
+         'Sample Key')%>% 
+  #The sample key is also selected for later use in verifying 
+  #that the RSD data is properly matching the CPS Data
+  
+  #then the newly renamed RSD columns are gathered together and 
+  #a column is created to indicate which metal corresponds to which RSD
+  gather(Cr52, Cr53, As75, Cd111, Cd114, Pb208, Ge72, key = "Metal", value = "RSD")%>%
+  
+  #Then the RSD values are mutated to insure that they are in a numeric format,
+  #this helps prevent type related errors
+  mutate(RSD=as.numeric(RSD))
 
-##To resolve error messages about the data path set the working directory as the location where the data is saved.
+#Previewing the Tidy RSD Data
+RSD_Data
+```
 
-#FAAS Data
-AA_Imported <- read_csv("data/AA_Data.csv", skip=4) 
-#skip refers to the number of rows in the data file before the column headers
+3) Tidying the CPS Data
+```{r CPS ICPMS Tidying}
+#Tidying the CPS Data for ICPMS and combining back in the RSD data
+ICPMS_Tidy <- ICPMS_Imported %>% 
+  
+  #Starting with renaming all of the CPS data with the appropriate metal
+  rename(Cr52 = CPS,
+         Cr53 = CPS_1,
+         As75 = CPS_2,
+         Cd111 = CPS_3,
+         Cd114 = CPS_4,
+         Pb208 = CPS_5,
+         Ge72 = CPS_7)%>% 
+  #Next gathering the CPS data and creating a column that indicates the coressponding metal 
+  gather(Cr52, Cr53, As75, Cd111, Cd114, Pb208, Ge72, key= "Metal", value="CPS")%>% 
+  
+  #Selecting the relevant columns 
+  #this can be adjusted to fit the data analysis being performed
+  select('Sample Key', Metal, CPS)%>% 
+  
+  #mutating in the RSD data
+  mutate(RSD = RSD_Data$RSD)
 
-#ICPMS Data
-ICPMS_Imported <- read_csv("data/ICPMS_Data.csv", skip=1)
-ICPMS_col_headers <- read_csv("data/ICPMS_Data.csv", skip=0) 
-#This dataframe will only be used for matching the correct columns to the correct metals
 
-#Sample Key
-Sample_Key_Imported <- read_csv("data/Sample_Key.csv", skip=0)
+#Confirming that the RSD data properly matches the CPS data
+#Should output TRUE if the data is properly matching 
+all(RSD_Data$'Sample Key'==ICPMS_Tidy$'Sample Key', RSD_Data$Metal==ICPMS_Tidy$Metal)
 
-#The following code previews each of the imported dataframes
-AA_Imported
-ICPMS_Imported
-ICPMS_col_headers
-Sample_Key_Imported
+#Previewing the ICPMS Data
+ICPMS_Tidy
 ```
