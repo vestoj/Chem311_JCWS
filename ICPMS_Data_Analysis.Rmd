@@ -1,0 +1,52 @@
+---
+title: 'Data Tidying and Analysis: ICPMS'
+author: "James Vesto"
+date: "12/16/2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+#This is the setup chunk
+knitr::opts_chunk$set(echo = TRUE)
+#The two packages being used in this code are tidyverse and readr, both are available on CRAN and can be installed if necessary with the following lines of code:
+
+#install.packages("tidyverse")
+#install.packages("readr")
+
+#loading the libraries
+library(tidyverse)
+library(readr)
+```
+
+#Data Tidying
+
+1) Importing the Data
+```{r data import, warning=FALSE, message=FALSE}
+#Importing the relevant data into the R markdown file
+
+##Before running this code make sure to upload the data onto the RStudio server 
+##or save the data files in an appropriate location for desktop versions of R
+
+##To resolve error messages about the data path set the working directory as the location where the data is saved.
+
+#FAAS Data
+AA_Imported <- read_csv("data/AA_Data.csv", skip=4) 
+#skip refers to the number of rows in the data file before the column headers
+
+#ICPMS Data
+ICPMS_Imported <- read_csv("data/ICPMS_Data.csv", skip=1)
+ICPMS_col_headers <- read_csv("data/ICPMS_Data.csv", skip=0) 
+#This dataframe will only be used for matching the correct columns to the correct metals
+
+#Sample Key
+Sample_Key_Imported <- read_csv("data/Sample_Key.csv", skip=0)
+
+#The following code previews each of the imported dataframes
+AA_Imported
+ICPMS_Imported
+ICPMS_col_headers
+Sample_Key_Imported
+```
