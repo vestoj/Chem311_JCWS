@@ -124,3 +124,19 @@ run_sites <- function(Function){
 MB <- sample_analysis("MB")
 sample_conc <- run_sites(sample_analysis)
 ```
+
+5) Method Blank Correction: subtracting concentrations of metals in the method blank from concentrations in the samples
+```{r, warning=FALSE}
+correction <- NULL
+
+for (unique_metal in metals_analyzed){
+  MB_metal <- filter(MB, metal==unique_metal)
+  metal_sample_data <- mutate(sample_conc, concentration.dil.blanked = concentration_diluted-MB$concentration_diluted)
+  correction <- rbind(correction, metal_sample_data)
+  }
+#This is producing a warning that longer object length is not a multiple of shorter object length!
+#Need to investigate as to why this is happening and make sure it isnt affecting the results!
+correction
+
+remove(unique_metal, MB_metal, metal_sample_data)
+```
