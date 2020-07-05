@@ -31,7 +31,7 @@ library(readr)
 ##To resolve error messages about the data path set the working directory as the location where the data is saved.
 
 #FAAS Data
-AA_imported <- read.csv("data/AA_Data.csv", skip=4) 
+AA_imported <- read.csv("Chem311_JCWS.Rproj/data/AA_Data.csv", skip=4) 
 #skip refers to the number of rows in the data file before the column headers
 
 #ICPMS Data
