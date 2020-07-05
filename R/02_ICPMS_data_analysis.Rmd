@@ -76,5 +76,52 @@ for (unique_metal in metals_analyzed){
   remove(equation, cal, slope, slope_STD, intercept, intercept_STD, w, model, unique_metal)
 ```
 
+2) Creating a function to analyze samples
+```{r}
+#inputs: unique_site (as a character, ex. "A")
+#outputs: concentration vector (containing: Metal, site, )
+sample_analysis <- function(unique_site){
+  concentration_data <- NULL
+  
+  for (unique_metal in analyzed_metals){
+    sample_data <- filter(ICPMS, metal == unique_metal, site == unique_site) 
+    cal <- filter(ICPMS_cal, metal == unique_metal) 
+  
+    m <- cal$slope 
+    b <- cal$intercept 
+    y <- sample_data$CPS_corrected
+  
+    intercept_error <- cal$intercept_STD
+    slope_error <- cal$slope_STD
+  
+    x <- (y-b)/m #The units are dependent on the calibration standards (Kg/mL)
+    
+    if(unique_site=="MB"){
+      x <- mean(x)}
+  
+    concentrations <- data.frame(sample_ID = sample_data$sample_key,
+                                metal= unique_metal,
+                                site = unique_site,
+                                concentration_diluted=x, 
+                                intercept_error, 
+                                slope_error)
+    
+    concentration_data <- rbind(concentration_data, concentrations)}
+  return(concentration_data)}
 
+```
+
+3) Creating a run_sites function
+```{r}
+#inputs: a function
+#outputs: a data frame with the function outputs from each site
+run_sites <- function(Function){
+  sample_sites <- unique(filter(ICPMS, site!= "QC", site!="MB")$site)
+  value <- NULL
+  for(sites in sample_sites){
+    site_value <- Function(sites)
+    value <- rbind(site_value, value)}
+  return(value)
+  }
+```
 
