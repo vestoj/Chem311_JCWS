@@ -119,12 +119,15 @@ run_sites <- function(Function){
   }
 ```
 
-4) Running the calibration and performing a method blank.
+4) Calibrate the data, perform a method blank, and correct for dilution)
+
 ```{r, warning=FALSE}
+
+#1) Calibrate data
 MB <- sample_analysis("MB")
 uncor_sample <- run_sites(sample_analysis)
 
-#Next correcting the sample data for the method blank
+#2) Method Blank
 sample_data <- NULL
 
 for (unique_metal in metals_analyzed){
@@ -135,7 +138,18 @@ for (unique_metal in metals_analyzed){
   }
 #This is producing a warning that longer object length is not a multiple of shorter object length!
 #Need to investigate as to why this is happening and make sure it isn't affecting the results!
-sample_data
 
+
+#3) Correct for dilution
+
+sample_data <- merge(ICPMS,sample_data)%>%
+  unique()%>%
+  mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000*1000))%>%
+  mutate(conc.unblanked= concentration.diluted*(total.volume/1000)/(mass.soil/1000*1000))%>%
+  select(-concentration,-type)
+
+#4) Clean environment
 remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample)
+
 ```
+
