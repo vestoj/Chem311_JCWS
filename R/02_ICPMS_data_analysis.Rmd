@@ -24,16 +24,17 @@ ICPMS
 1) Start by defining useful lists; such as what sites, metals, and sample IDs were analyzed.
 
 ```{r}
-sites_analyzed <-ICPMS %>% 
+sites_analyzed <- ICPMS %>% 
   select(site)%>%
   unique()%>%
-  filter(site!= "QC", site!="MB", site!="") #excluding method blank and quality control from the list of sites
+  filter(site!= "QC", site!="MB", site!="")#excluding method blank and quality control from the list of sites
 
-metals_analyzed <-unique(ICPMS$metal)
-sample_IDs <-unique(ICPMS$sample.key)
+
+metals_analyzed <- unique(ICPMS$metal)
+sample_IDs <- unique(ICPMS$sample.key)
 
 #Preview the lists to check for potential issues:
-#sites_analyzed #note: this is appearing as a data column, however functionally it should work as a list (if you run is.list the output is TRUE)
+#sites_analyzed #Note: this is actually a data frame with only one column!
 #metals_analyzed
 #sample_IDs
 ```
@@ -43,9 +44,8 @@ sample_IDs <-unique(ICPMS$sample.key)
 ```{r Calibration}
 
 ICPMS_cal <- NULL
-analyzed_metals <- unique(ICPMS$metal)
 
-for (unique_metal in analyzed_metals){
+for (unique_metal in metals_analyzed){
 
   cal <- ICPMS %>% 
       filter(type == "Cal1" | type== "Cal2" | type == "Cal3") %>% 
@@ -61,13 +61,18 @@ for (unique_metal in analyzed_metals){
   intercept_STD <- summary(model)$coefficients[1,2]
 
   plot(cal$signal ~ cal$conc,
-      xlab= paste("Concentration of ", unique.metal,"(ppb)"),
+      xlab= paste("Concentration of ", unique_metal,"(ppb)"),
       ylab= "Counts per second")+ 
       abline(model, col="red")+ 
-      title(paste("Calibration for", unique.metal)) 
+      title(paste("Calibration for", unique_metal)) 
 
   equation <- data.frame(metal= unique_metal, slope, slope_STD, intercept, intercept_STD)
-  ICPMS_cal <- rbind(ICPMS_cal, equation)}
+  ICPMS_cal <- rbind(ICPMS_cal, equation)
+  }
 
   ICPMS_cal 
+  
+  #Clearing the environment (optional, but helps to prevent accidentally using the wrong object!)
+  remove(equation, cal, slope, slope_STD, intercept, intercept_STD, w, model, unique_metal)
 ```
+
