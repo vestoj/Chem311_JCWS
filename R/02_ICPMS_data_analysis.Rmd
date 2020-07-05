@@ -157,7 +157,7 @@ sample_data <- merge(ICPMS,sample_data)%>%
 sample_data
 
 #4) Clean environment
-remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample)
+remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, keys, sample_metal)
 
 ```
 
