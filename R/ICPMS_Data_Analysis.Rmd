@@ -23,23 +23,24 @@ library(readr)
 
 1) Importing the Data
 ```{r data import, warning=FALSE, message=FALSE}
-#Importing the relevant data into the R markdown file
+# Importing the relevant data into the R markdown file
 
-##Before running this code make sure to upload the data onto the RStudio server 
-##or save the data files in an appropriate location for desktop versions of R
+# Before running this code make sure to upload the data onto the RStudio server 
+# or save the data files in an appropriate location for desktop versions of R
 
-##To resolve error messages about the data path set the working directory as the location where the data is saved.
+# To resolve error messages about the data path set the working directory as the location where the data is saved.
+# The example calls the full path, this will need to be changed to however the data is saved on your computer. An easy way to determine the path is to click the import dataset button in the environment, and copy the path from the box on the top.
 
 #FAAS Data
-AA_imported <- read.csv("Chem311_JCWS.Rproj/data/AA_Data.csv", skip=4) 
+AA_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/AA_Data.csv", skip=4) 
 #skip refers to the number of rows in the data file before the column headers
 
 #ICPMS Data
-ICPMS_imported <- read.csv("data/ICPMS_Data.csv", skip=1)
+ICPMS_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/ICPMS_Data.csv", skip=1)
 #This data frame will only be used for matching the correct columns to the correct metals
 
 #Sample Key
-sample_key_imported <- read.csv("data/Sample_Key.csv", skip=0)
+sample_key_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/Sample_Key.csv", skip=0)
 
 #The following code previews each of the imported data frames
 AA_imported
