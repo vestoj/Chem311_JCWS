@@ -1,0 +1,27 @@
+---
+title: 'Data Tidying: ICPMS'
+author: "James Vesto"
+date: "12/16/2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readr)
+```
+
+```{r}
+#Note! Before running this file you must run file 1 (01_ICPMS_data_tidying.Rmd)
+ICPMS
+```
+
+```{r}
+
+```
+
