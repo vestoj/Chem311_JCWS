@@ -9,7 +9,6 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
@@ -24,19 +23,14 @@ ICPMS
 1) Start by defining useful lists; such as what sites, metals, and sample IDs were analyzed.
 
 ```{r}
-sites_analyzed <- ICPMS %>% 
-  select(site)%>%
-  unique()%>%
-  filter(site!= "QC", site!="MB", site!="")#excluding method blank and quality control from the list of sites
-
-
+sample_sites <- unique(filter(ICPMS, site!= "QC", site!="MB", site!="")$site)
+#excluding method blank and quality control from the list of sites
 metals_analyzed <- unique(ICPMS$metal)
-sample_IDs <- unique(ICPMS$sample.key)
 
 #Preview the lists to check for potential issues:
-#sites_analyzed #Note: this is actually a data frame with only one column!
+#sample_sites
 #metals_analyzed
-#sample_IDs
+#unique_IDs #from file 1
 ```
 
 2) Calibrating the ICPMS Data
@@ -80,16 +74,17 @@ for (unique_metal in metals_analyzed){
 ```{r}
 #inputs: unique_site (as a character, ex. "A")
 #outputs: concentration vector (containing: Metal, site, )
+
 sample_analysis <- function(unique_site){
   concentration_data <- NULL
   
-  for (unique_metal in analyzed_metals){
+  for (unique_metal in metals_analyzed){
     sample_data <- filter(ICPMS, metal == unique_metal, site == unique_site) 
     cal <- filter(ICPMS_cal, metal == unique_metal) 
   
     m <- cal$slope 
     b <- cal$intercept 
-    y <- sample_data$CPS_corrected
+    y <- sample_data$CPS.corrected
   
     intercept_error <- cal$intercept_STD
     slope_error <- cal$slope_STD
@@ -99,7 +94,7 @@ sample_analysis <- function(unique_site){
     if(unique_site=="MB"){
       x <- mean(x)}
   
-    concentrations <- data.frame(sample_ID = sample_data$sample_key,
+    concentrations <- data.frame(sample_ID = sample_data$sample.key,
                                 metal= unique_metal,
                                 site = unique_site,
                                 concentration_diluted=x, 
@@ -116,7 +111,6 @@ sample_analysis <- function(unique_site){
 #inputs: a function
 #outputs: a data frame with the function outputs from each site
 run_sites <- function(Function){
-  sample_sites <- unique(filter(ICPMS, site!= "QC", site!="MB")$site)
   value <- NULL
   for(sites in sample_sites){
     site_value <- Function(sites)
@@ -125,3 +119,8 @@ run_sites <- function(Function){
   }
 ```
 
+4) Running the calibration to extract the MB and sample concentrations post dilution
+```{r}
+MB <- sample_analysis("MB")
+sample_conc <- run_sites(sample_analysis)
+```
