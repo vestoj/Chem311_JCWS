@@ -144,9 +144,10 @@ for (unique_metal in metals_analyzed){
 
 sample_data <- merge(ICPMS,sample_data)%>%
   unique()%>%
-  mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000*1000))%>%
-  mutate(conc.unblanked= concentration.diluted*(total.volume/1000)/(mass.soil/1000*1000))%>%
+  mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000*1000)*101)%>%
+  mutate(conc.unblanked= concentration.diluted*(total.volume/1000)/(mass.soil/1000*1000)*101)%>%
   select(-concentration,-type)
+
 
 #4) Clean environment
 remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample)
