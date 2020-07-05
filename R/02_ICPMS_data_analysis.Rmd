@@ -21,7 +21,21 @@ library(readr)
 ICPMS
 ```
 
-```{r}
+1) Start by defining useful lists; such as what sites, metals, and sample IDs were analyzed.
 
+```{r}
+sites_analyzed <-ICPMS %>% 
+  select(site)%>%
+  unique()%>%
+  filter(site!= "QC", site!="MB", site!="") #excluding method blank and quality control from the list of sites
+
+metals_analyzed <-unique(ICPMS$metal)
+sample_IDs <-unique(ICPMS$sample.key)
+
+#Preview the lists to check for potential issues:
+sites_analyzed #note: this is appearing as a data column, however functionally it should work as a list (if you run is.list the output is TRUE)
+metals_analyzed
+sample_IDs
+```
 ```
 
