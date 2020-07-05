@@ -76,3 +76,5 @@ for (unique_metal in metals_analyzed){
   remove(equation, cal, slope, slope_STD, intercept, intercept_STD, w, model, unique_metal)
 ```
 
+
+
