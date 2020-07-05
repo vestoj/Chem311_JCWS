@@ -51,8 +51,8 @@ for (unique_metal in metals_analyzed){
 
   slope <- model$coefficients[2]
   intercept <- model$coefficients[1]
-  slope_STD <- summary(model)$coefficients[2,2]
-  intercept_STD <- summary(model)$coefficients[1,2]
+  slope.STD <- summary(model)$coefficients[2,2]
+  intercept.STD <- summary(model)$coefficients[1,2]
 
   plot(cal$signal ~ cal$conc,
       xlab= paste("Concentration of ", unique_metal,"(ppb)"),
@@ -60,14 +60,14 @@ for (unique_metal in metals_analyzed){
       abline(model, col="red")+ 
       title(paste("Calibration for", unique_metal)) 
 
-  equation <- data.frame(metal= unique_metal, slope, slope_STD, intercept, intercept_STD)
+  equation <- data.frame(metal= unique_metal, slope, slope.STD, intercept, intercept.STD)
   ICPMS_cal <- rbind(ICPMS_cal, equation)
   }
 
   ICPMS_cal 
   
   #Clearing the environment (optional, but helps to prevent accidentally using the wrong object!)
-  remove(equation, cal, slope, slope_STD, intercept, intercept_STD, w, model, unique_metal)
+  remove(equation, cal, slope, slope.STD, intercept, intercept.STD, w, model, unique_metal)
 ```
 
 2) Creating a function to analyze samples
@@ -86,20 +86,20 @@ sample_analysis <- function(unique_site){
     b <- cal$intercept 
     y <- sample_data$CPS.corrected
   
-    intercept_error <- cal$intercept_STD
-    slope_error <- cal$slope_STD
+    intercept.error <- cal$intercept.STD
+    slope.error <- cal$slope.STD
   
     x <- (y-b)/m #The units are dependent on the calibration standards (Kg/mL)
     
     if(unique_site=="MB"){
       x <- mean(x)}
   
-    concentrations <- data.frame(sample_ID = sample_data$sample.key,
+    concentrations <- data.frame(sample.key = sample_data$sample.key,
                                 metal= unique_metal,
                                 site = unique_site,
-                                concentration_diluted=x, 
-                                intercept_error, 
-                                slope_error)
+                                concentration.diluted=x, 
+                                intercept.error, 
+                                slope.error)
     
     concentration_data <- rbind(concentration_data, concentrations)}
   return(concentration_data)}
@@ -119,24 +119,23 @@ run_sites <- function(Function){
   }
 ```
 
-4) Running the calibration to extract the MB and sample concentrations post dilution
-```{r}
-MB <- sample_analysis("MB")
-sample_conc <- run_sites(sample_analysis)
-```
-
-5) Method Blank Correction: subtracting concentrations of metals in the method blank from concentrations in the samples
+4) Running the calibration and performing a method blank.
 ```{r, warning=FALSE}
-correction <- NULL
+MB <- sample_analysis("MB")
+uncor_sample <- run_sites(sample_analysis)
+
+#Next correcting the sample data for the method blank
+sample_data <- NULL
 
 for (unique_metal in metals_analyzed){
   MB_metal <- filter(MB, metal==unique_metal)
-  metal_sample_data <- mutate(sample_conc, concentration.dil.blanked = concentration_diluted-MB$concentration_diluted)
-  correction <- rbind(correction, metal_sample_data)
+  metal_sample_data <- mutate(uncor_sample, 
+                              conc.dil.blanked = concentration.diluted-MB$concentration.diluted)
+  sample_data<- rbind(sample_data, metal_sample_data)
   }
 #This is producing a warning that longer object length is not a multiple of shorter object length!
-#Need to investigate as to why this is happening and make sure it isnt affecting the results!
-correction
+#Need to investigate as to why this is happening and make sure it isn't affecting the results!
+sample_data
 
-remove(unique_metal, MB_metal, metal_sample_data)
+remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample)
 ```
