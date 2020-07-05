@@ -187,5 +187,12 @@ ICPMS
 #all(Data_ICPMS==ICPMS_Data) #This proves the original CPS correction code does not properly match the ISTD CPS readings to the Sample CPS readings! output= FALSE shows that the data improperly matches!! 
 ```
 
-6) Removing untidy data sets from the environment!
-*
+6) Removing clutter from the environment!
+
+```{r, warning= FALSE}
+#Set warning=FALSE so the chunk will not notify you when a package is already removed from the environment
+#This can be modified to keep any of the objects if you so choose.
+
+remove(corrected, ICPMS_merged, ICPMS_tidy, ISTD, RSD_Data, sample, RSD_data, ID)
+```
+
