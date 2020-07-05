@@ -33,9 +33,41 @@ metals_analyzed <-unique(ICPMS$metal)
 sample_IDs <-unique(ICPMS$sample.key)
 
 #Preview the lists to check for potential issues:
-sites_analyzed #note: this is appearing as a data column, however functionally it should work as a list (if you run is.list the output is TRUE)
-metals_analyzed
-sample_IDs
-```
+#sites_analyzed #note: this is appearing as a data column, however functionally it should work as a list (if you run is.list the output is TRUE)
+#metals_analyzed
+#sample_IDs
 ```
 
+2) Calibrating the ICPMS Data
+
+```{r Calibration}
+
+ICPMS_cal <- NULL
+analyzed_metals <- unique(ICPMS$metal)
+
+for (unique_metal in analyzed_metals){
+
+  cal <- ICPMS %>% 
+      filter(type == "Cal1" | type== "Cal2" | type == "Cal3") %>% 
+      filter(metal == unique_metal) %>%
+      select(conc = concentration, signal = CPS.corrected, RSD = RSD.corrected) #(Kg/mL)
+
+  w <- 1/(cal$signal*cal$RSD)^2 
+  model <- lm(cal$signal ~ cal$conc, weights= w)
+
+  slope <- model$coefficients[2]
+  intercept <- model$coefficients[1]
+  slope_STD <- summary(model)$coefficients[2,2]
+  intercept_STD <- summary(model)$coefficients[1,2]
+
+  plot(cal$signal ~ cal$conc,
+      xlab= paste("Concentration of ", unique.metal,"(ppb)"),
+      ylab= "Counts per second")+ 
+      abline(model, col="red")+ 
+      title(paste("Calibration for", unique.metal)) 
+
+  equation <- data.frame(metal= unique_metal, slope, slope_STD, intercept, intercept_STD)
+  ICPMS_cal <- rbind(ICPMS_cal, equation)}
+
+  ICPMS_cal 
+```
