@@ -1,5 +1,5 @@
 ---
-title: 'Data Tidying and Analysis: ICPMS'
+title: 'Data Tidying: ICPMS'
 author: "James Vesto"
 date: "12/16/2019"
 output:
@@ -31,10 +31,6 @@ library(readr)
 # To resolve error messages about the data path set the working directory as the location where the data is saved.
 # The example calls the full path, this will need to be changed to however the data is saved on your computer. An easy way to determine the path is to click the import dataset button in the environment, and copy the path from the box on the top.
 
-#FAAS Data
-AA_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/AA_Data.csv", skip=4) 
-#skip refers to the number of rows in the data file before the column headers
-
 #ICPMS Data
 ICPMS_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/ICPMS_Data.csv", skip=1)
 #This data frame will only be used for matching the correct columns to the correct metals
@@ -43,7 +39,6 @@ ICPMS_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/ICPMS_Data.csv"
 sample_key_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/Sample_Key.csv", skip=0)
 
 #The following code previews each of the imported data frames
-AA_imported
 ICPMS_imported
 sample_key_imported
 ```
