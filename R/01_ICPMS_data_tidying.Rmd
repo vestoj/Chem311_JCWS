@@ -36,11 +36,11 @@ ICPMS_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/ICPMS_Data.csv"
 #This data frame will only be used for matching the correct columns to the correct metals
 
 #Sample Key
-sample_key_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/Sample_Key.csv", skip=0)
+sample_key <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/Sample_Key.csv", skip=0)
 
 #The following code previews each of the imported data frames
 ICPMS_imported
-sample_key_imported
+sample_key
 ```
 
 #Data Tidying
@@ -113,7 +113,7 @@ ICPMS_tidy
 4) Merging in the Sample Key
 ```{r merging sample key}
 #Merging together the ICPMS Data and the Sample Key
-ICPMS_merged <- merge(ICPMS_tidy, sample_key_imported)
+ICPMS_merged <- merge(ICPMS_tidy, sample_key)
 
 #Previewing the merged data
 ICPMS_merged
@@ -188,7 +188,7 @@ ICPMS
 #Set warning=FALSE so the chunk will not notify you when a package is already removed from the environment
 #This can be modified to keep any of the objects if you so choose.
 
-remove(corrected, ICPMS_merged, ICPMS_tidy, ISTD, RSD_Data, sample, RSD_data, ID)
+remove(corrected, ICPMS_merged, ICPMS_tidy, ISTD, RSD_Data, sample, RSD_data, ID, ICPMS_imported)
 ```
 
 #See file 2 for the ICPMS data analysis example code!
