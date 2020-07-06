@@ -46,7 +46,7 @@ for (unique_metal in metals_analyzed){
   cal <- ICPMS %>% 
       filter(type == "Cal1" | type== "Cal2" | type == "Cal3") %>% 
       filter(metal == unique_metal) %>%
-      select(conc = concentration, signal = CPS.corrected, RSD = RSD.corrected) #(Kg/mL)
+      select(conc = concentration, signal = CPS.corrected, RSD = RSD.corrected)
 
   w <- 1/(cal$signal*cal$RSD)^2 
   model <- lm(cal$signal ~ cal$conc, weights= w)
@@ -57,7 +57,7 @@ for (unique_metal in metals_analyzed){
   intercept.STD <- summary(model)$coefficients[1,2]
 
   plot(cal$signal ~ cal$conc,
-      xlab= paste("Concentration of ", unique_metal,"(ppb)"),
+      xlab= paste("Concentration of ", unique_metal,"(ppb)"), #units from the standard solution prepared at OHSU (µg/L)
       ylab= "Counts per second")+ 
       abline(model, col="red")+ 
       title(paste("Calibration for", unique_metal)) 
@@ -127,10 +127,10 @@ run_sites <- function(Function){
 ```{r}
 
 #1) Calibrate data
-MB <- sample_analysis("MB")
+MB <- sample_analysis("MB") #(ug/kg)
 
-uncor_sample <- run_sites(sample_analysis)
-keys <- unique(uncor_sample$sample.key)
+uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions (ug/kg)
+keys <- unique(uncor_sample$sample.key) 
 
 #2) Method Blank
 sample_data <- NULL
@@ -152,8 +152,9 @@ for (unique_metal in metals_analyzed){
 #3) Correct for dilution
 sample_data <- merge(ICPMS,sample_data)%>%
   unique()%>%
-  mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000*1000)*101)%>%
-  mutate(conc.unblanked= concentration.diluted*(total.volume/1000)/(mass.soil/1000*1000)*101)%>%
+  mutate(conc.blanked= conc.dil.blanked*(total.volume*1000)/(mass.soil/1000)*101)%>% 
+  #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
+  mutate(conc.unblanked= concentration.diluted*(total.volume/1000)/(mass.soil/1000)*101)%>%
   select(-concentration,-type)
 
 sample_data
@@ -164,4 +165,16 @@ remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, keys, sa
 
 ```
 
-5) error propogation
+5) error propagation
+
+#May need to double check that this is the right process
+
+#errors: corrected RSD (corrected CPS), error in mass (soil), error in volume (total volume), intercept error (int), slope error (m), dilutions error (). 
+```{r}
+eyb <- sqrt((ey)^2 + (eb)^2)
+yb <- y-b
+ex <- sqrt((eyb/yb)^2 + (em/m)^2)*x
+e <- sqrt((ex/x)^2 + (0.003/(A$'Total Volume'/1000))^2 + (0.00001/(A$
+'Mass of Soil'/1000))^2)*corrected sd <- ((mean(e)*101)/1000)
+```
+
