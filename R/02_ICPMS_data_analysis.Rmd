@@ -134,6 +134,7 @@ keys <- unique(uncor_sample$sample.key)
 
 #2) Method Blank
 sample_data <- NULL
+MB_data <- NULL
 
 for (unique_metal in metals_analyzed){
   MB_metal <- filter(MB, metal==unique_metal)%>%
@@ -145,7 +146,8 @@ for (unique_metal in metals_analyzed){
   metal_sample_data <- mutate(sample_metal, 
                               conc.dil.blanked = sample_metal$concentration.diluted-MB_metal$concentration.diluted)
   sample_data<- rbind(sample_data, metal_sample_data)
-  }}
+  }
+ MB_data <-  rbind(MB_data,MB_metal)}
 
 #3) Correct for dilution
 sample_data <- merge(ICPMS,sample_data)%>%
@@ -155,6 +157,7 @@ sample_data <- merge(ICPMS,sample_data)%>%
   select(-concentration,-type)
 
 sample_data
+MB_data
 
 #4) Clean environment
 remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, keys, sample_metal)
