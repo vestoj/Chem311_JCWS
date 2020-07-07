@@ -218,12 +218,18 @@ remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, keys, sa
 ```{r}
 #1) Propagate error from calibration 
 #a) for method blank
+MB_error <- NULL
 for (metals in metals_analyzed){
   metal_data <- filter(MB_data, metal==metals)
   
   e_yb <- sqrt((metal_data$RSD.corrected)^2 + (metal_data$intercept.error)^2) #error in y-b from the calibration
   yb <- metal_data$CPS.corrected-metal_data$intercept
-  e_x <- metal_data$concentration.diluted*sqrt((e_yb/yb)^2+(metal_data$slope.error/metal_data$slope)^2) #error in x from the calibration
+  e_x <- metal_data$concentration.diluted*sqrt((e_yb/yb)^2+(metal_data$slope.error/metal_data$slope)^2) 
+  #error in x from the calibration
+  error <- data.frame(metal = metals,
+                      MB_conc = metal_data$concentration.diluted,
+                      MB_error = e_x)
+  MB_error <- rbind(MB_error, error)
 }
 
 #b) for sample data 
