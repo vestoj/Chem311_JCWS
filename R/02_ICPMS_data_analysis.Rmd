@@ -35,7 +35,43 @@ analysts <- unique(filter(ICPMS, analyst!="")$analyst)
 #unique_IDs #from file 1
 ```
 
-2) Calibrating the ICPMS Data
+2) Writing initial error propagation functions
+
+  a) Propagation of addition/subtraction
+```{r}
+propsum <- function(e_x){
+  errors <- NULL
+  for (val in e_x){
+    errors <- c(errors, (val)^2)
+  }
+  sigma <- sqrt(sum(errors))
+}
+```
+  b) Propagation of multiplication/division
+  
+```{r}
+propmult <- function(e_x, x){
+  errors <- NULL
+  for (num in 1:length(e_x)){
+    errors <- c(errors, (e_x[num]/x[num])^2)
+  }
+  sigma <- sqrt(sum(errors))
+  return(sigma)
+}
+
+``` 
+  c) Propagation of means
+  
+```{r}
+#Propagate error in means
+propmean <- function(e_x, x){
+  e <- propsums(e_x)
+  error <- e/mean(x)
+  return(error)
+}
+```  
+
+2) Calibrating the ICPMS Data 
 
 ```{r Calibration}
 
@@ -80,6 +116,9 @@ ICPMS_cal
 sample_analysis <- function(unique_site){
   concentration_data <- NULL
   
+  unique_metal <- "Cd111"
+  unique_site <- "MB"
+  
   for (unique_metal in metals_analyzed){
     sample_data <- filter(ICPMS, metal == unique_metal, site == unique_site) 
     cal <- filter(ICPMS_cal, metal == unique_metal) 
@@ -92,9 +131,17 @@ sample_analysis <- function(unique_site){
     slope.error <- cal$slope.STD
   
     x <- (y-b)/m #The units are dependent on the calibration standards (Kg/mL)
+    RSD.corrected <- sample_data$RSD.corrected
+    CPS.corrected <- sample_data$CPS.corrected
+    
     
     if(unique_site=="MB"){
-      x <- mean(x)}
+      x <- mean(x)
+      
+      RSD.corrected <- sample_data$RSD.corrected
+      CPS.corrected <- sample_data$CPS.corrected
+      
+      }
   
     concentrations <- data.frame(sample.key = sample_data$sample.key, 
                                 analyst=sample_data$analyst,
@@ -102,7 +149,9 @@ sample_analysis <- function(unique_site){
                                 site = unique_site,
                                 concentration.diluted=x, 
                                 intercept.error, 
-                                slope.error)
+                                slope.error,
+                                RSD.corrected=RSD.corrected,
+                                CPS.corrected=CPS.corrected)
     
     concentration_data <- rbind(concentration_data, concentrations)}
   return(concentration_data)}
@@ -171,10 +220,27 @@ remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, keys, sa
 
 #errors: corrected RSD (corrected CPS), error in mass (soil), error in volume (total volume), intercept error (int), slope error (m), dilutions error (). 
 ```{r}
-eyb <- sqrt((ey)^2 + (eb)^2)
+#1) Propagate error from calibration 
+#a) for method blank
+for (metals in metals_analyzed){
+  metal_data <- filter(MB_data, metal==metals)
+  
+  e_yb <- sqrt((metal_data$RSD.corrected)^2 + (metal_data$intercept.STD)^2) #error in y-b from the calibration
+  yb <- metal_data$CPS.corrected-metal_data$intercept
+  e_x <- x*sqrt((e_yb/yb)^2+(metal_data$slope.STD/metal_data$slope)^2) #error in x from the calibration
+}
+
+#b) for sample data 
+e_yb <- sqrt((e_y)^2 + (e_b)^2) #error in y-b from the calibration
 yb <- y-b
-ex <- sqrt((eyb/yb)^2 + (em/m)^2)*x
-e <- sqrt((ex/x)^2 + (0.003/(A$'Total Volume'/1000))^2 + (0.00001/(A$
-'Mass of Soil'/1000))^2)*corrected sd <- ((mean(e)*101)/1000)
+e_x <- x*sqrt((e_yb/yb)^2+(e_m/m)^2) #error in x from the calibration
+
+#2) Propagate MB error and sample concentration error
+
+#3) Propagate error from dilution
+
+#4) Average data and Propagate
+
+
 ```
 
