@@ -58,14 +58,13 @@ propmult <- function(e_x, x){
   sigma <- sqrt(sum(errors))
   return(sigma)
 }
-
 ``` 
   c) Propagation of means
   
 ```{r}
 #Propagate error in means
 propmean <- function(e_x, x){
-  e <- propsums(e_x)
+  e <- propsum(e_x)
   error <- e/mean(x)
   return(error)
 }
@@ -116,9 +115,6 @@ ICPMS_cal
 sample_analysis <- function(unique_site){
   concentration_data <- NULL
   
-  unique_metal <- "Cd111"
-  unique_site <- "MB"
-  
   for (unique_metal in metals_analyzed){
     sample_data <- filter(ICPMS, metal == unique_metal, site == unique_site) 
     cal <- filter(ICPMS_cal, metal == unique_metal) 
@@ -137,10 +133,8 @@ sample_analysis <- function(unique_site){
     
     if(unique_site=="MB"){
       x <- mean(x)
-      
-      RSD.corrected <- sample_data$RSD.corrected
-      CPS.corrected <- sample_data$CPS.corrected
-      
+      RSD.corrected <- propmean(sample_data$RSD.corrected, x)
+      CPS.corrected <- propmean(sample_data$CPS.corrected, x)
       }
   
     concentrations <- data.frame(sample.key = sample_data$sample.key, 
@@ -194,7 +188,7 @@ for (unique_metal in metals_analyzed){
   sample_metal <- filter(uncor_sample, metal==unique_metal)
   metal_sample_data <- mutate(sample_metal, 
                               conc.dil.blanked = sample_metal$concentration.diluted-MB_metal$concentration.diluted)
-  sample_data<- rbind(sample_data, metal_sample_data)
+  sample_data <- rbind(sample_data, metal_sample_data)
   }
  MB_data <-  rbind(MB_data,MB_metal)}
 
