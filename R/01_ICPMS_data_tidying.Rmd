@@ -160,6 +160,7 @@ for(ID in unique_IDs){
   corrected <- mutate(sample,
                       CPS.corrected = sample$CPS / ISTD$CPS,
                       RSD.corrected = sample$RSD / ISTD$RSD)
+                      #Need to double check this
   
   #6) Bind together the Corrected data
   ICPMS <- rbind(ICPMS, corrected)
