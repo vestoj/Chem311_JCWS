@@ -23,16 +23,13 @@ ICPMS
 1) Start by defining useful lists; such as what sites, metals, and sample IDs were analyzed.
 
 ```{r}
-sample_sites <- unique(filter(ICPMS, site!= "QC", site!="MB", site!="")$site)
+sample_sites <- unique(filter(ICPMS, site!="MB", site!="")$site)
 #excluding method blank and quality control from the list of sites
 metals_analyzed <- unique(ICPMS$metal)
-analysts <- unique(filter(ICPMS, analyst!="")$analyst)
 
 #Preview the lists to check for potential issues:
 #sample_sites
-#analyst
 #metals_analyzed
-#unique_IDs #from file 1
 ```
 
 2) Writing propagation of error for means function
@@ -165,7 +162,6 @@ run_sites <- function(Function){
 4) Calibrate the data, perform a method blank, and correct for dilution)
 
 ```{r}
-
 #1) Calibrate data
 MB <- sample_analysis("MB") #(ug/kg)
 
@@ -180,7 +176,7 @@ keys
 
 ```{r}
 #2) Method Blank
-sample_data <- NULL
+sample_data_mb <- NULL
 
 for (unique_metal in metals_analyzed){
   MB_metal <- filter(MB, metal==unique_metal)
@@ -190,12 +186,12 @@ for (unique_metal in metals_analyzed){
   #Error Propagation: subtraction of MB
   conc.dil.blanked.error <- sqrt((sample_metal$conc.dil.error)^2 + (MB_metal$conc.dil.error)^2)
   
-  metal_sample_data <- sample_metal %>% 
-    mutate(conc.dil.blanked, conc.dil.blanked.error)
-  sample_data <- rbind(sample_data, metal_sample_data)
+  sample_data_mb <- sample_metal %>% 
+    mutate(conc.dil.blanked, conc.dil.blanked.error)%>%
+    rbind(sample_data_mb)
 }
 
-sample_data 
+sample_data_mb
 ```
 
 #Sample Prep Procedure
@@ -233,16 +229,16 @@ dil_1010_e <- sqrt(1^2 + 10^2)
 dil_e <- sqrt((dil_1010_e/1010)^2+(1/10)^2) #error in 101 dilution factor
 
 #3) Correct for dilution
-sample_data_2 <- merge(ICPMS,sample_data)%>% #This adds in important details such as soil mass
+sample_data <- merge(ICPMS,sample_data_mb)%>% #This adds in important details such as soil mass
   unique()%>%
   mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000)*101,
-         #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
-         conc.unblanked = conc.dil*(total.volume/1000)/(mass.soil/1000)*101,
-         conc.blanked.error = conc.blanked* 
+      #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
+           conc.blanked.error = conc.blanked* 
            sqrt((conc.dil.blanked.error/conc.dil.blanked)^2+
                   (dil_e/101)^2 +
                   (mass_e/mass.soil)^2+ 
                   (vol_e/total.volume)^2),
+         conc.unblanked = conc.dil*(total.volume/1000)/(mass.soil/1000)*101,
          conc.unblanked.error = conc.unblanked* 
            sqrt((conc.dil.error/conc.dil)^2+
                   (dil_e/101)^2 +
@@ -260,8 +256,8 @@ sample_data_2 <- merge(ICPMS,sample_data)%>% #This adds in important details suc
          -conc.dil.blanked.error, 
          -conc.dil,
          -conc.dil.error)
-ICPMS
-sample_data_2
+
+sample_data
 
 #4) Clean environment
 #remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, sample_metal)
@@ -270,3 +266,27 @@ sample_data_2
 ```
 #What other errors could potentially contribute to the true uncertainty in the final concentrations? 
 #Would you expect any of them to be large enough to impact the uncertainty? 
+
+```{r, warning= FALSE}
+remove(
+  #Data
+       MB_metal, 
+       MB,
+       ICPMS_cal,
+       sample_data_mb,
+       sample_metal, 
+       uncor_sample,
+  #Values     
+       unique_metal, 
+       conc.dil.blanked, 
+       conc.dil.blanked.error,
+       dil_1010_e,
+       dil_e,
+       keys,
+       mass_e,
+       vol_e,
+  #functions
+       sample_analysis,
+       run_sites)
+```
+

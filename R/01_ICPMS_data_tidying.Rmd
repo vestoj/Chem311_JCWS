@@ -189,7 +189,17 @@ ICPMS
 #Set warning=FALSE so the chunk will not notify you when a package is already removed from the environment
 #This can be modified to keep any of the objects if you so choose.
 
-remove(corrected, ICPMS_merged, ICPMS_tidy, ISTD, RSD_Data, sample, RSD_data, ID, ICPMS_imported)
+remove(corrected, 
+       ICPMS_merged, 
+       ICPMS_tidy,
+       ISTD, 
+       RSD_Data, 
+       RSD_data,
+       sample_key,
+       sample, 
+       ID, 
+       ICPMS_imported,
+       unique_IDs)
 ```
 
 #See file 2 for the ICPMS data analysis example code!
