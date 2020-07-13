@@ -176,9 +176,10 @@ run_sites <- function(Function){
   value <- NULL
   for(sites in sample_sites){
     site_value <- Function(sites)
-    value <- rbind(site_value, value)}
-  return(value)
+    value <- rbind(site_value, value)
   }
+  return(value)
+}
 ```
 
 4) Calibrate the data, perform a method blank, and correct for dilution)
@@ -191,22 +192,18 @@ MB <- sample_analysis("MB") #(ug/kg)
 uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions (ug/kg)
 keys <- unique(uncor_sample$sample.key) 
 
-
 #2) Method Blank
 sample_data <- NULL
-MB_data <- NULL
 
 for (unique_metal in metals_analyzed){
-  MB_metal <- filter(MB, metal==unique_metal)%>%
-    unique()
-  
-  for(ID in keys){
+  MB_metal <- filter(MB, metal==unique_metal)
   sample_metal <- filter(uncor_sample, metal==unique_metal)
-  metal_sample_data <- mutate(sample_metal, 
+  metal_sample_data <- mutate(sample_metal,
                               conc.dil.blanked = sample_metal$conc.dil-MB_metal$conc.dil)
   sample_data <- rbind(sample_data, metal_sample_data)
-  }
- MB_data <-  rbind(MB_data,MB_metal)}
+}
+
+#Now add error prop!
 
 #3) Correct for dilution
 sample_data <- merge(ICPMS,sample_data)%>%
