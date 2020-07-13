@@ -193,6 +193,9 @@ uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions 
 keys <- unique(uncor_sample$sample.key) #sample.keys that correspond to actual samples! 
 #(i.e. not QC, MB)
 
+MB
+uncor_sample
+keys
 ```
 
 ```{r}
@@ -208,31 +211,87 @@ for (unique_metal in metals_analyzed){
   conc.dil.blanked.error <- sqrt((sample_metal$conc.dil.error)^2 + (MB_metal$conc.dil.error)^2)
   
   metal_sample_data <- sample_metal %>% 
-    mutate(conc.dil.blanked, conc.dil.blanked.error)%>%
-    select(-conc.dil,-conc.dil.error) #this step could definitely be removed if wanted!
+    mutate(conc.dil.blanked, conc.dil.blanked.error)
   sample_data <- rbind(sample_data, metal_sample_data)
 }
 
 sample_data 
 ```
 
-```{r}
-#3) Correct for dilution
-sample_data <- merge(ICPMS,sample_data)%>%
-  unique()%>%
-  mutate(conc.blanked= conc.dil.blanked*(total.volume*1000)/(mass.soil/1000)*101)%>% 
-  #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
-  mutate(conc.unblanked= concentration.diluted*(total.volume/1000)/(mass.soil/1000)*101)%>%
-  select(-concentration,-type)
+#Sample Prep Procedure
 
-sample_data
-MB_data
+1) mass.soil (example: 1.50621) weighed on analytical balance (uncertainty = ±.001)
+*Note: because the analytical lab has two different types of balances, and the uncertainty was not recorded in the data collection we must assume that everyone used the less precise balance*
+
+2) mass.soil was dried in 55˚C oven for 1 week
+
+3) mass.soil was ground with mortar and pestle
+
+4) mass.soil was quantitatively transferred to acid washed teflon beaker (do steps 2-4 affect uncertainty?)
+
+5) mass.soil was digested with ~10 mL MQ water, 3 mL nitric acid, 2 mL hydrochloric acid and heated till steaming for 30 minutes.
+
+*Note: additional 3 mL nitric and 2 mL hydrochloric were added to prevent rxn from running dry*
+
+6) Acid digestion solution was quantitatively transferred to falcon tube and diluted to total.volume which was measured with fill line (example 45 mL) (uncertainty= 1 mL?)
+
+*How could you improve the precision at this step?*
+
+7) Falcon tube centrifuged for 10 minutes at 1500 rpm for 10 min.
+
+8) 10 mL of sample transferred to metals-free 15 mL tube and brought to OHSU for ICPMS analysis. 
+(stored in fridge prior to transport)
+
+9) 10 µL (uncertainty= ± 1µL) of of solution was micro-pipetted into 1000 µL (uncertainty= )of MQ water by Lab Assistant at OHSU. 
+
+
+
+
+```{r}
+#error propagation
+vol_e <- 1
+mass_e <- .001
+dil_1010_e <- sqrt(1^2 + 10^2) 
+dil_e <- sqrt((dil_1010_e/1010)^2+(1/10)^2) #error in 101 dilution factor
+
+#3) Correct for dilution
+sample_data_2 <- merge(ICPMS,sample_data)%>% #This adds in important details such as soil mass
+  unique()%>%
+  mutate(conc.blanked= conc.dil.blanked*(total.volume*1000)/(mass.soil/1000)*101,
+         #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
+         conc.unblanked = conc.dil*(total.volume/1000)/(mass.soil/1000)*101,
+         conc.blanked.error = conc.blanked* 
+           sqrt((conc.dil.blanked.error/conc.dil.blanked)^2+
+                  (dil_e/101)^2 +
+                  (mass_e/mass.soil)^2+ 
+                  (vol_e/total.volume)^2),
+         conc.unblanked.error = conc.unblanked* 
+           sqrt((conc.dil.error/conc.dil)^2+
+                  (dil_e/101)^2 +
+                  (mass_e/mass.soil)^2+ 
+                  (vol_e/total.volume)^2))%>%
+  select(-concentration, #removing unecesssary columns
+         -type, 
+         -mass.soil,
+         -total.volume,
+         -CPS.corrected,
+         -RSD.corrected,
+         -CPS,
+         -RSD,
+         -conc.dil.blanked, 
+         -conc.dil.blanked.error, 
+         -conc.dil,
+         -conc.dil.error)
+sample_data_2
 
 #4) Clean environment
-remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, sample_metal)
+#remove(unique_metal, MB_metal, metal_sample_data, MB, uncor_sample, ID, sample_metal)
 #Note: Saving "keys" for future use
 
 ```
+#What other errors could potentially contribute to the true uncertainty in the final concentrations? 
+#Would you expect any of them to be large enough to impact the uncertainty? 
+
 
 5) error propagation
 
