@@ -190,21 +190,33 @@ run_sites <- function(Function){
 MB <- sample_analysis("MB") #(ug/kg)
 
 uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions (ug/kg)
-keys <- unique(uncor_sample$sample.key) 
+keys <- unique(uncor_sample$sample.key) #sample.keys that correspond to actual samples! 
+#(i.e. not QC, MB)
 
+```
+
+```{r}
 #2) Method Blank
 sample_data <- NULL
 
 for (unique_metal in metals_analyzed){
   MB_metal <- filter(MB, metal==unique_metal)
   sample_metal <- filter(uncor_sample, metal==unique_metal)
-  metal_sample_data <- mutate(sample_metal,
-                              conc.dil.blanked = sample_metal$conc.dil-MB_metal$conc.dil)
+  conc.dil.blanked <- sample_metal$conc.dil-MB_metal$conc.dil
+  
+  #Error Propagation: subtraction of MB
+  conc.dil.blanked.error <- sqrt((sample_metal$conc.dil.error)^2 + (MB_metal$conc.dil.error)^2)
+  
+  metal_sample_data <- sample_metal %>% 
+    mutate(conc.dil.blanked, conc.dil.blanked.error)%>%
+    select(-conc.dil,-conc.dil.error) #this step could definitely be removed if wanted!
   sample_data <- rbind(sample_data, metal_sample_data)
 }
 
-#Now add error prop!
+sample_data 
+```
 
+```{r}
 #3) Correct for dilution
 sample_data <- merge(ICPMS,sample_data)%>%
   unique()%>%
