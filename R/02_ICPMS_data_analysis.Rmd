@@ -35,36 +35,16 @@ analysts <- unique(filter(ICPMS, analyst!="")$analyst)
 #unique_IDs #from file 1
 ```
 
-2) Writing initial error propagation functions
-
-  a) Propagation of addition/subtraction
-```{r}
-propsum <- function(e_x){
-  errors <- NULL
-  for (val in e_x){
-    errors <- c(errors, (val)^2)
-  }
-  sigma <- sqrt(sum(errors))
-}
-```
-  b) Propagation of multiplication/division
-  
-```{r}
-propmult <- function(e_x, x){
-  errors <- NULL
-  for (num in 1:length(e_x)){
-    errors <- c(errors, (e_x[num]/x[num])^2)
-  }
-  sigma <- sqrt(sum(errors))
-  return(sigma)
-}
-``` 
-  c) Propagation of means
+2) Writing propagation of error for means function
   
 ```{r}
 #Propagate error in means
 propmean <- function(e_x, x){
-  e <- propsum(e_x)
+ errors <- NULL
+  for (val in e_x){
+    errors <- c(errors, (val)^2)
+    e <- sqrt(sum(errors))
+  }
   error <- e/mean(x)
   return(error)
 }
@@ -245,8 +225,6 @@ sample_data
 9) 10 µL (uncertainty= ± 1µL) of of solution was micro-pipetted into 1000 µL (uncertainty= )of MQ water by Lab Assistant at OHSU. 
 
 
-
-
 ```{r}
 #error propagation
 vol_e <- 1
@@ -257,7 +235,7 @@ dil_e <- sqrt((dil_1010_e/1010)^2+(1/10)^2) #error in 101 dilution factor
 #3) Correct for dilution
 sample_data_2 <- merge(ICPMS,sample_data)%>% #This adds in important details such as soil mass
   unique()%>%
-  mutate(conc.blanked= conc.dil.blanked*(total.volume*1000)/(mass.soil/1000)*101,
+  mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000)*101,
          #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
          conc.unblanked = conc.dil*(total.volume/1000)/(mass.soil/1000)*101,
          conc.blanked.error = conc.blanked* 
@@ -282,6 +260,7 @@ sample_data_2 <- merge(ICPMS,sample_data)%>% #This adds in important details suc
          -conc.dil.blanked.error, 
          -conc.dil,
          -conc.dil.error)
+ICPMS
 sample_data_2
 
 #4) Clean environment
