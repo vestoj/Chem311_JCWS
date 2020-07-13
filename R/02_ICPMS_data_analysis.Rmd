@@ -115,53 +115,56 @@ ICPMS_cal
 sample_analysis <- function(unique_site){
   concentration_data <- NULL
   for (unique_metal in metals_analyzed){
-    for(ID in unique_IDs){
-    sample_data <- filter(ICPMS, metal == unique_metal, site == unique_site, sample.key==ID)
+    sample <- filter(ICPMS, metal == unique_metal, site == unique_site)
+    data <- NULL #only necessary for MB 
     
-   if (nrow(sample_data)==1){
-    cal <- filter(ICPMS_cal, metal == unique_metal) 
+    for(ID in sample$sample.key){ 
+      sample_data <- filter(sample, sample.key == ID)
+      cal <- filter(ICPMS_cal, metal == unique_metal) 
   
-    #Sample Analysis 
-    
-    m <- cal$slope 
-    b <- cal$intercept 
-    y <- sample_data$CPS.corrected
+      #Sample Analysis 
+      m <- cal$slope 
+      b <- cal$intercept 
+      y <- sample_data$CPS.corrected
   
-    intercept.error <- cal$intercept.STD
-    slope.error <- cal$slope.STD
+      b_e<- cal$intercept.STD
+      m_e <- cal$slope.STD
   
-    x <- (y-b)/m #The units are dependent on the calibration standards (Kg/mL)
-    RSD.corrected <- sample_data$RSD.corrected
-    CPS.corrected <- sample_data$CPS.corrected
+      x <- (y-b)/m #The units are dependent on the calibration standards (Kg/mL)
+      
+      RSD <- sample_data$RSD.corrected
+      CPS <- sample_data$CPS.corrected
   
-    errors <- NULL
-    
-    #Error Propagation
-
-      e_yb <- sqrt((sample_data$RSD.corrected)^2 + (intercept.error)^2) 
+      #Error Propagation
+      e_yb <- sqrt((RSD)^2 + (b_e)^2) 
       #error in y-b from the calibration
-      yb <- sample_data$CPS.corrected-b
-      e_x <- x*sqrt((e_yb/yb)^2+(slope.error/m)^2)
+      yb <- CPS-b
+      e_x <- x*sqrt((e_yb/yb)^2+(m_e/m)^2)
       #error in x from the calibration
-  
-    concentrations <- data.frame(sample.key = sample_data$sample.key,
-                                analyst = sample_data$analyst,
-                                metal = unique_metal,
-                                site = unique_site,
-                                concentration.diluted = x, 
-                                conc.dil.error = e_x,
-                                RSD.corrected=RSD.corrected,
-                                CPS.corrected=CPS.corrected)
-    
-    concentration_data <- rbind(concentration_data, concentrations)}
-       
+      
+      data <- rbind(data, data.frame(sample.key = ID, x, e_x)) #storing for MB purposes
+      if (unique_site != "MB"){
+        concentration_data <- data.frame(sample.key = sample_data$sample.key,
+                                         analyst = sample_data$analyst,
+                                         metal = unique_metal,
+                                         site = unique_site,
+                                         conc.dil = x, 
+                                         conc.dil.error = e_x)%>%
+                              rbind(concentration_data)
+      }
+    }
     if (unique_site=="MB"){
-      x <- mean(x)
-      e_x <- propmean(e_x, x)
-      RSD.corrected <- propmean(sample_data$RSD.corrected, sample_data$CPS.corrected)
-      CPS.corrected <- mean(sample_data$CPS.corrected)
-      }}}
-return(concentration_data)}
+      x <- mean(data$x)
+      e_x <- propmean(data$e_x, data$x)
+      concentration_data <- data.frame(metal = unique_metal,
+                                     site = unique_site, 
+                                     conc.dil = x,
+                                     conc.dil.error = e_x) %>%
+                            rbind(concentration_data)
+    }
+  }
+  return(concentration_data)
+}
 
 ```
 
@@ -187,8 +190,7 @@ MB <- sample_analysis("MB") #(ug/kg)
 
 uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions (ug/kg)
 keys <- unique(uncor_sample$sample.key) 
-#view(uncor_sample)
-#okay so this data looks good!
+
 
 #2) Method Blank
 sample_data <- NULL
@@ -196,13 +198,12 @@ MB_data <- NULL
 
 for (unique_metal in metals_analyzed){
   MB_metal <- filter(MB, metal==unique_metal)%>%
-    select(-sample.key,-analyst)%>%
     unique()
   
   for(ID in keys){
   sample_metal <- filter(uncor_sample, metal==unique_metal)
   metal_sample_data <- mutate(sample_metal, 
-                              conc.dil.blanked = sample_metal$concentration.diluted-MB_metal$concentration.diluted)
+                              conc.dil.blanked = sample_metal$conc.dil-MB_metal$conc.dil)
   sample_data <- rbind(sample_data, metal_sample_data)
   }
  MB_data <-  rbind(MB_data,MB_metal)}
