@@ -55,10 +55,19 @@ site_data %>% filter(site=="A")%>%
 ```{r}
 plot <- NULL
 for(metals in metals_analyzed){
- plot <- site_data %>% filter(metal==metals, site != "QC")%>%
-      ggplot(aes(site, conc.blanked))+ 
-      geom_col()
+ data <- site_data %>%
+   filter(metal==metals, site != "QC")
+   
+  plot <-  ggplot(data, aes(site, conc.blanked))+ 
+    geom_col(fill="#abd7eb")+
+    labs( title=paste("Concentration of", metals, "in Johnson Creek Watershed Sites"),
+          y= paste("Concentration of", metals, "(ppm)"), #double check unit!!
+          x="Site along Johnson Creek Watershed")+     
+    geom_errorbar(ymin= data$conc.blanked - data$conc.blanked.error,
+                  ymax= data$conc.blanked + data$conc.blanked.error)
+    
  print(plot)
 }
+
 #This graph looks really neat but is perhaps a bit suspicious in the case of Pb208?
 ```
