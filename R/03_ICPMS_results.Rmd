@@ -41,3 +41,24 @@ for(sites in sample_sites){
 
 site_data
 ```
+3) Plot concentration data at each site
+*Note: good practice for creating a visualization is to draw out approximately what you want it to look like on paper first. Then use the ggplot2 cheatsheet to help you create it in R!*
+
+```{r}
+#testing out a plot idea
+site_data %>% filter(site=="A")%>%
+  ggplot(aes(metal, conc.blanked))+ 
+  geom_col()
+
+#decided this wasnt the best decision, given that the concentration of lead extremely overshadows the other metals
+```
+```{r}
+plot <- NULL
+for(metals in metals_analyzed){
+ plot <- site_data %>% filter(metal==metals, site != "QC")%>%
+      ggplot(aes(site, conc.blanked))+ 
+      geom_col()
+ print(plot)
+}
+#This graph looks really neat but is perhaps a bit suspicious in the case of Pb208?
+```
