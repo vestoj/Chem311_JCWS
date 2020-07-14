@@ -7,24 +7,37 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readr)
 ```
 
-## R Markdown
+##Note! Before running this file you must run files 1 and 2.
+#This is the portion of the analysis where you get to think critically and creatively
+#to perform visualizations, stastical analyses and tell a story about the data.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#It may be necessary to work back through the first to files to store more data based on the questions you want to ask, such as what had the largest contribution to the uncertainty in the results.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+1) View Data
+```{r}
+sample_data
 ```
+2) Average data for each site
 
-## Including Plots
+```{r, message=FALSE}
+#The message is: `summarise()` ungrouping output (override with `.groups` argument)
+site_data <- NULL
 
-You can also embed plots, for example:
+for(sites in sample_sites){
+ site_data <- filter(sample_data, site==sites)%>%
+    group_by(metal)%>%
+    summarise(site=sites,
+              conc.blanked = mean(conc.blanked),
+              conc.blanked.error = propmean(e_x = conc.blanked.error, x = conc.blanked),
+              conc.unblanked = mean(conc.unblanked),
+              conc.unblanked.error = propmean(conc.unblanked.error, conc.unblanked))%>%
+   rbind(site_data)
+}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+site_data
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
