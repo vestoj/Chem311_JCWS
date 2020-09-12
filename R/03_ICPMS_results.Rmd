@@ -59,12 +59,13 @@ for(metals in metals_analyzed){
    filter(metal==metals, site != "QC")
    
   plot <-  ggplot(data, aes(site, conc.blanked))+ 
-    geom_col(fill="#abd7eb")+
+    geom_col(fill="#003300")+
     labs( title=paste("Concentration of", metals, "in Johnson Creek Watershed Sites"),
           y= paste("Concentration of", metals, "(ppm)"), #double check unit!!
           x="Site along Johnson Creek Watershed")+     
     geom_errorbar(ymin= data$conc.blanked - data$conc.blanked.error,
-                  ymax= data$conc.blanked + data$conc.blanked.error)
+                  ymax= data$conc.blanked + data$conc.blanked.error)+
+    coord_cartesian(ylim = c(0, 350))
     
  print(plot)
 }
