@@ -50,8 +50,9 @@ site_data %>% filter(site=="A")%>%
   ggplot(aes(metal, conc.blanked))+ 
   geom_col()
 
-#decided this wasnt the best decision, given that the concentration of lead extremely overshadows the other metals
+#decided this wasn't the best decision, given that the concentration of lead extremely overshadows the other metals
 ```
+#Beginning by making some example plots for each of the metals analyzed
 ```{r}
 plot <- NULL
 for(metals in metals_analyzed){
@@ -69,6 +70,25 @@ for(metals in metals_analyzed){
     
  print(plot)
 }
-
+remove(data, plot, metals, sites)
 #This graph looks really neat but is perhaps a bit suspicious in the case of Pb208?
 ```
+#Now seperating out and making neat graphs for each metal
+```{r}
+Cd114 <-  site_data %>%
+ filter(metal=="Cd114", site != "QC")
+
+png("Cd114.png", units="in", width=7, height=5, res=300)
+
+Cd114 <-  ggplot(Cd114, aes(site, conc.blanked))+ 
+  geom_col(fill="#003300")+
+  labs(title="Concentration of Cd114 in Johnson Creek Watershed Sites",
+        y= "Concentration of Cd114 (ppm)", #double check unit!!
+        x="Site along Johnson Creek Watershed")+     
+  geom_errorbar(ymin= Cd114$conc.blanked - Cd114$conc.blanked.error,
+                max= Cd114$conc.blanked + Cd114$conc.blanked.error)+
+  coord_cartesian(ylim = c(0, 350))
+print(Cd114)
+
+```
+
