@@ -32,21 +32,6 @@ metals_analyzed <- unique(ICPMS$metal)
 #metals_analyzed
 ```
 
-2) Writing propagation of error for means function
-  
-```{r}
-#Propagate error in means
-propmean <- function(e_x, x){
- errors <- NULL
-  for (val in e_x){
-    errors <- c(errors, (val)^2)
-    e <- sqrt(sum(errors))
-  }
-  error <- e/mean(x)
-  return(error)
-}
-```  
-
 2) Calibrating the ICPMS Data 
 
 ```{r Calibration}
@@ -132,7 +117,7 @@ sample_analysis <- function(unique_site){
     }
     if (unique_site=="MB"){
       x <- mean(data$x)
-      e_x <- propmean(data$e_x, data$x)
+      e_x <- sd(data$x)
       concentration_data <- data.frame(metal = unique_metal,
                                      site = unique_site, 
                                      conc.dil = x,
