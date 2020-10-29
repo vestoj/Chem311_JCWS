@@ -83,11 +83,12 @@ png("Cd114.png", units="in", width=7, height=5, res=300)
 Cd114 <-  ggplot(Cd114, aes(site, conc.blanked))+ 
   geom_col(fill="#003300")+
   labs(title="Concentration of Cd114 in Johnson Creek Watershed Sites",
-        y= "Concentration of Cd114 (ppm)", #double check unit!!
+        y= "Concentration of Cd114 (ppm)", 
         x="Site along Johnson Creek Watershed")+     
   geom_errorbar(ymin= Cd114$conc.blanked - Cd114$conc.blanked.error,
                 max= Cd114$conc.blanked + Cd114$conc.blanked.error)+
   coord_cartesian(ylim = c(0, 350))
+
 print(Cd114)
 ```
 

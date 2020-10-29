@@ -22,23 +22,19 @@ library(readr)
 ```
 
 1) Importing the Data
-```{r data import, warning=FALSE, message=FALSE}
-# Importing the relevant data into the R markdown file
+```{r, warning=FALSE, message=FALSE}
+#Before running this code make sure to upload the data onto the RStudio server 
+#or save the data files in an appropriate location for desktop versions of R
+#To resolve error messages about the data path set the working directory as the location where the data is saved.
 
-# Before running this code make sure to upload the data onto the RStudio server 
-# or save the data files in an appropriate location for desktop versions of R
+#The example calls the full path, this will need to be changed to however the data is saved on your computer. An easy way to determine the path is to click the import dataset button in the environment and copy the path from the box on the top.
 
-# To resolve error messages about the data path set the working directory as the location where the data is saved.
-# The example calls the full path, this will need to be changed to however the data is saved on your computer. An easy way to determine the path is to click the import dataset button in the environment and copy the path from the box on the top.
-
-#ICPMS Data
-ICPMS_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/ICPMS_Data.csv", skip=1)
-#This data frame will only be used for matching the correct columns to the correct metals
-
-#Sample Key
+ICPMS_imported <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/ICPMS_Data.csv", 
+                           skip=1, 
+                           na="N/A")
 sample_key <- read.csv("~/RStudio/Projects/Chem311_JCWS/data/Sample_Key.csv", skip=0)
 
-#The following code previews each of the imported data frames
+#Preview data
 ICPMS_imported
 sample_key
 ```
@@ -52,55 +48,47 @@ sample_key
 #are properly matched to the correct sample reading (CPS)
 
 RSD_data<-ICPMS_imported %>%
-  #first the RSD columns are selected and renamed with the appropriate metal isotope
+  #first the RSD columns are selected 
+  #and renamed with the appropriate metal isotope
   select(Cr52 = CPS.RSD, 
          Cr53 = CPS.RSD.1, 
          As75 = CPS.RSD.2, 
          Cd111 = CPS.RSD.3, 
          Cd114 = CPS.RSD.4, 
          Pb208 = CPS.RSD.5,
-         Ge72 = CPS.7,
+         Ge_RSD = CPS.RSD.7,
          Sample.Key)%>% 
   #The sample key is also selected for later use in verifying 
   #that the RSD data is properly matching the CPS Data
-  
   #then the newly renamed RSD columns are gathered together and 
   #a column is created to indicate which metal corresponds to which RSD
-  gather(Cr52, Cr53, As75, Cd111, Cd114, Pb208, Ge72, key = "metal", value = "RSD")%>%
-  
-  #Then the RSD values are mutated to ensure that they are in a numeric format,
-  #this helps prevent type related errors
-  mutate(RSD=as.numeric(RSD))
+  pivot_longer(1:6,
+               names_to = "metal",
+               values_to="RSD")
 
 #Previewing the Tidy RSD Data
 RSD_data
 ```
 
-3) Tidying the CPS Data
+3) Tidying the CPS Data & Correcting for ISTD
 ```{r CPS ICPMS Tidying}
 #Tidying the CPS Data for ICPMS and combining back in the RSD data
 ICPMS_tidy <- ICPMS_imported %>% 
-  
-  #Starting with renaming all of the CPS data with the appropriate metal
-  rename(Cr52 = CPS,
+  select(Cr52 = CPS,
          Cr53 = CPS.1,
          As75 = CPS.2,
          Cd111 = CPS.3,
          Cd114 = CPS.4,
          Pb208 = CPS.5,
-         Ge72 = CPS.7)%>% 
-  #Next gathering the CPS data and creating a column that indicates the corresponding metal 
-  gather(Cr52, Cr53, As75, 
-         Cd111, Cd114, Pb208, Ge72, 
-         key= "metal", value="CPS")%>% 
-  
-  #Selecting the relevant columns 
-  #this can be adjusted to fit the data analysis being performed
-  select(Sample.Key, metal, CPS)%>% 
-  
+         Ge72 = CPS.7,
+         Sample.Key)%>% 
+  pivot_longer(1:6,
+               names_to= "metal", 
+               values_to= "CPS")%>% 
   #mutating in the RSD data
-  mutate(RSD = RSD_data$RSD)
-
+  mutate(RSD = RSD_data$RSD/RSD_data$Ge_RSD,
+         CPS=CPS/Ge72)%>%#ISTD Correction
+  select(-Ge72)
 
 #Confirming that the RSD data properly matches the CPS data
 #Should output TRUE if the data is properly matching 
@@ -118,88 +106,12 @@ ICPMS_merged <- merge(ICPMS_tidy, sample_key)
 #Previewing the merged data
 ICPMS_merged
 ```
-#Data Processing
 
-5) Correcting for internal standard
-*Incorrect code*
-
-This was the original attempt for ISTD correction, unfortunately it improperly pairs the ISTD readings to the ICPMS Samples, later code is shown which utilizes a "for loop" to correct this mistake.
-
-This code shows the danger of oversimplifying the data analysis; that it is important to confirm that the data is properly matching 
-
-ISTD_Data <- filter(ICPMS_Merged, Metal== "Ge72") 
-Sample_Data <- filter(ICPMS_Merged, Metal!= "Ge72")
-ICPMS <- mutate(Sample_Data, CPS_corrected = Sample_Data$CPS/ISTD_Data$CPS, RSD_corrected = Sample_Data$RSD/ISTD_Data$RSD)
-
-*Correct Code: Utilizes "for loops" to insure proper matching*
-```{r ISTD correction}
-#This code chunk also performs the ISTD correction, however it uses a for loop to insure proper matching of ISTD to sample reading
-#Note: There is a Ge72 CPS value for each sample key and the correct code sorts by Sample Key when subtracting the ISTD CPS Value
-
-##Designing a "for loop"
-
-#1) assign a blank dataframe; this allows the data to be combined together between iterations of the loop
-ICPMS <- NULL #This creates a blank dataframe for which the corrected data can be added to!
-
-
-#2) Find the unique iterations in the Sample Key
-unique_IDs <- unique(ICPMS_merged$Sample.Key)
-
-#3) Start the for loop 
-for(ID in unique_IDs){
-  #This loop performs the ISTD correction for each sample key and 
-  #then adds the corrected data together between iterations
-
-  #4) Filter the sample data for ISTD data and by each iteration in the unique Sample Keys
-  #Note: The ISTD Data should ONLY consist of unique Sample Keys
-  
-  ISTD <- filter(ICPMS_merged, metal=="Ge72", Sample.Key ==ID)
-  sample <- filter(ICPMS_merged, metal!="Ge72", Sample.Key==ID)
-  
-  #5) Correct the CPS and RSD readings
-  corrected <- mutate(sample,
-                      CPS.corrected = sample$CPS / ISTD$CPS,
-                      RSD.corrected = sample$RSD / ISTD$RSD)
-                      #Need to double check this
-  
-  #6) Bind together the Corrected data
-  ICPMS <- rbind(ICPMS, corrected)
-  
-
-}
-
-#7) Polish up the final ICPMS data by renaming all columns to "snake case" (w/ the exception of acronyms!) to fit with standard R practice:
-
-ICPMS <- ICPMS %>% rename(sample.key = Sample.Key,
-                               type=Type,
-                               site=Site,
-                               analyst=Analyst,
-                               mass.soil= Mass.of.Soil,
-                               total.volume= Total.Volume,
-                               concentration= Concentration)
-#8) Previewing Data
-ICPMS
-
-#all(Data_ICPMS==ICPMS_Data) #This proves the original CPS correction code does not properly match the ISTD CPS readings to the Sample CPS readings! output= FALSE shows that the data improperly matches!! 
-```
-
-6) Removing clutter from the environment!
+5) Removing clutter from the environment!
 
 ```{r, warning= FALSE}
-#Set warning=FALSE so the chunk will not notify you when a package is already removed from the environment
-#This can be modified to keep any of the objects if you so choose.
-
-remove(corrected, 
-       ICPMS_merged, 
-       ICPMS_tidy,
-       ISTD, 
-       RSD_Data, 
-       RSD_data,
-       sample_key,
-       sample, 
-       ID, 
-       ICPMS_imported,
-       unique_IDs)
+#Set warning=FALSE so the chunk will not notify you when an object is already removed from the environment
+rm(list=setdiff(ls(), "ICPMS_merged"))
 ```
 
 #See file 2 for the ICPMS data analysis example code!
