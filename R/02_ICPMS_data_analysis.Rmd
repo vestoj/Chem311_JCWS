@@ -1,5 +1,5 @@
 ---
-title: 'Data Tidying: ICPMS'
+title: 'Data Analysis: ICPMS'
 author: "James Vesto"
 date: "12/16/2019"
 output:
@@ -43,15 +43,15 @@ for (unique_metal in metals_analyzed){
   cal <- ICPMS %>% 
       filter(type == "Cal1" | type== "Cal2" | type == "Cal3") %>% 
       filter(metal == unique_metal) %>%
-      select(conc = concentration, signal = CPS.corrected, RSD = RSD.corrected)
+      select(conc = concentration, signal = cps, rsd)
 
-  w <- 1/(cal$signal*cal$RSD)^2 
+  w <- 1/(cal$signal*cal$rsd)^2 
   model <- lm(cal$signal ~ cal$conc, weights= w)
 
   slope <- model$coefficients[2]
   intercept <- model$coefficients[1]
-  slope.STD <- summary(model)$coefficients[2,2]
-  intercept.STD <- summary(model)$coefficients[1,2]
+  slope_std <- summary(model)$coefficients[2,2]
+  intercept_std <- summary(model)$coefficients[1,2]
 
   plot(cal$signal ~ cal$conc,
       xlab= paste("Concentration of ", unique_metal,"(ppb)"), #units from the standard solution prepared at OHSU (µg/L)
@@ -59,20 +59,20 @@ for (unique_metal in metals_analyzed){
       abline(model, col="red")+ 
       title(paste("Calibration for", unique_metal)) 
 
-  equation <- data.frame(metal= unique_metal, slope, slope.STD, intercept, intercept.STD)
+  equation <- data_frame(metal= unique_metal, slope, slope_std, intercept, intercept_std)
   ICPMS_cal <- rbind(ICPMS_cal, equation)
   }
 
 ICPMS_cal
   
   #Clearing the environment (optional, but helps to prevent accidentally using the wrong object!)
-  remove(equation, cal, slope, slope.STD, intercept, intercept.STD, w, model, unique_metal)
+  remove(equation, cal, slope, slope_std, intercept, intercept_std, w, model, unique_metal)
 ```
 
-2) Creating a function to analyze samples
+3) Creating a function to analyze samples
 ```{r}
 #inputs: unique_site (as a character, ex. "A")
-#outputs: concentration vector (containing: Metal, site, )
+#outputs: concentration vector 
 
 sample_analysis <- function(unique_site){
   concentration_data <- NULL
@@ -80,22 +80,22 @@ sample_analysis <- function(unique_site){
     sample <- filter(ICPMS, metal == unique_metal, site == unique_site)
     data <- NULL #only necessary for MB 
     
-    for(ID in sample$sample.key){ 
-      sample_data <- filter(sample, sample.key == ID)
+    for(ID in sample$sample_key){ 
+      sample_data <- filter(sample, sample_key == ID)
       cal <- filter(ICPMS_cal, metal == unique_metal) 
   
       #Sample Analysis 
       m <- cal$slope 
       b <- cal$intercept 
-      y <- sample_data$CPS.corrected
+      y <- sample_data$cps
   
-      b_e<- cal$intercept.STD
-      m_e <- cal$slope.STD
+      b_e<- cal$intercept_std
+      m_e <- cal$slope_std
   
       x <- (y-b)/m #The units are dependent on the calibration standards (Kg/mL)
       
-      RSD <- sample_data$RSD.corrected
-      CPS <- sample_data$CPS.corrected
+      RSD <- sample_data$rsd
+      CPS <- sample_data$cps
   
       #Error Propagation
       e_yb <- sqrt((RSD)^2 + (b_e)^2) 
@@ -104,24 +104,24 @@ sample_analysis <- function(unique_site){
       e_x <- x*sqrt((e_yb/yb)^2+(m_e/m)^2)
       #error in x from the calibration
       
-      data <- rbind(data, data.frame(sample.key = ID, x, e_x)) #storing for MB purposes
+      data <- rbind(data, data_frame(sample_key = ID, x, e_x)) #storing for MB purposes
       if (unique_site != "MB"){
-        concentration_data <- data.frame(sample.key = sample_data$sample.key,
+        concentration_data <- data_frame(sample_key = sample_data$sample_key,
                                          analyst = sample_data$analyst,
                                          metal = unique_metal,
                                          site = unique_site,
-                                         conc.dil = x, 
-                                         conc.dil.error = e_x)%>%
+                                         conc_dil = x, 
+                                         conc_dil_error = e_x)%>%
                               rbind(concentration_data)
       }
     }
     if (unique_site=="MB"){
       x <- mean(data$x)
       e_x <- sd(data$x)
-      concentration_data <- data.frame(metal = unique_metal,
+      concentration_data <- data_frame(metal = unique_metal,
                                      site = unique_site, 
-                                     conc.dil = x,
-                                     conc.dil.error = e_x) %>%
+                                     conc_dil = x,
+                                     conc_dil_error = e_x) %>%
                             rbind(concentration_data)
     }
   }
@@ -130,7 +130,7 @@ sample_analysis <- function(unique_site){
 
 ```
 
-3) Creating a run_sites function
+4) Creating a run_sites function
 ```{r}
 #inputs: a function
 #outputs: a data frame with the function outputs from each site
@@ -144,14 +144,12 @@ run_sites <- function(Function){
 }
 ```
 
-4) Calibrate the data, perform a method blank, and correct for dilution)
-
+5) Analyze the sample
 ```{r}
-#1) Calibrate data
 MB <- sample_analysis("MB") #(ug/kg)
 
 uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions (ug/kg)
-keys <- unique(uncor_sample$sample.key) #sample.keys that correspond to actual samples! 
+keys <- unique(uncor_sample$sample_key) #sample_keys that correspond to actual samples! 
 #(i.e. not QC, MB)
 
 MB
@@ -166,13 +164,13 @@ sample_data_mb <- NULL
 for (unique_metal in metals_analyzed){
   MB_metal <- filter(MB, metal==unique_metal)
   sample_metal <- filter(uncor_sample, metal==unique_metal)
-  conc.dil.blanked <- sample_metal$conc.dil-MB_metal$conc.dil
+  conc_dil_blanked <- sample_metal$conc_dil-MB_metal$conc_dil
   
   #Error Propagation: subtraction of MB
-  conc.dil.blanked.error <- sqrt((sample_metal$conc.dil.error)^2 + (MB_metal$conc.dil.error)^2)
+  conc_dil_blanked_error <- sqrt((sample_metal$conc_dil_error)^2 + (MB_metal$conc_dil_error)^2)
   
   sample_data_mb <- sample_metal %>% 
-    mutate(conc.dil.blanked, conc.dil.blanked.error)%>%
+    mutate(conc_dil_blanked, conc_dil_blanked_error)%>%
     rbind(sample_data_mb)
 }
 
@@ -181,20 +179,20 @@ sample_data_mb
 
 #Sample Prep Procedure
 
-1) mass.soil (example: 1.50621) weighed on analytical balance (uncertainty = ±.001)
+1) mass_soil (example: 1.50621) weighed on analytical balance (uncertainty = ±.001)
 *Note: because the analytical lab has two different types of balances, and the uncertainty was not recorded in the data collection we must assume that everyone used the less precise balance*
 
-2) mass.soil was dried in 55˚C oven for 1 week
+2) mass_soil was dried in 55˚C oven for 1 week
 
-3) mass.soil was ground with mortar and pestle
+3) mass_soil was ground with mortar and pestle
 
-4) mass.soil was quantitatively transferred to acid washed teflon beaker (do steps 2-4 affect uncertainty?)
+4) mass_soil was quantitatively transferred to acid washed teflon beaker (do steps 2-4 affect uncertainty?)
 
-5) mass.soil was digested with ~10 mL MQ water, 3 mL nitric acid, 2 mL hydrochloric acid and heated till steaming for 30 minutes.
+5) mass_soil was digested with ~10 mL MQ water, 3 mL nitric acid, 2 mL hydrochloric acid and heated till steaming for 30 minutes.
 
 *Note: additional 3 mL nitric and 2 mL hydrochloric were added to prevent rxn from running dry*
 
-6) Acid digestion solution was quantitatively transferred to falcon tube and diluted to total.volume which was measured with fill line (example 45 mL) (uncertainty= 1 mL?)
+6) Acid digestion solution was quantitatively transferred to falcon tube and diluted to total_volume which was measured with fill line (example 45 mL) (uncertainty= 1 mL?)
 
 *How could you improve the precision at this step?*
 
@@ -216,31 +214,29 @@ dil_e <- sqrt((dil_1010_e/1010)^2+(1/10)^2) #error in 101 dilution factor
 #3) Correct for dilution
 sample_data <- merge(ICPMS,sample_data_mb)%>% #This adds in important details such as soil mass
   unique()%>%
-  mutate(conc.blanked= conc.dil.blanked*(total.volume/1000)/(mass.soil/1000)*101,
+  mutate(conc_blanked= conc_dil_blanked*(total_volume/1000)/(mass_of_soil/1000)*101,
       #101 is the factor diluted by at OHSU to make the solutions dilute enough to run ICPMS on.
-           conc.blanked.error = conc.blanked* 
-           sqrt((conc.dil.blanked.error/conc.dil.blanked)^2+
+           conc_blanked_error = conc_blanked* 
+           sqrt((conc_dil_blanked_error/conc_dil_blanked)^2+
                   (dil_e/101)^2 +
-                  (mass_e/mass.soil)^2+ 
-                  (vol_e/total.volume)^2),
-         conc.unblanked = conc.dil*(total.volume/1000)/(mass.soil/1000)*101,
-         conc.unblanked.error = conc.unblanked* 
-           sqrt((conc.dil.error/conc.dil)^2+
+                  (mass_e/mass_of_soil)^2+ 
+                  (vol_e/total_volume)^2),
+         conc_unblanked = conc_dil*(total_volume/1000)/(mass_of_soil/1000)*101,
+         conc_unblanked_error = conc_unblanked* 
+           sqrt((conc_dil_error/conc_dil)^2+
                   (dil_e/101)^2 +
-                  (mass_e/mass.soil)^2+ 
-                  (vol_e/total.volume)^2))%>%
+                  (mass_e/mass_of_soil)^2+ 
+                  (vol_e/total_volume)^2))%>%
   select(-concentration, #removing unecesssary columns
          -type, 
-         -mass.soil,
-         -total.volume,
-         -CPS.corrected,
-         -RSD.corrected,
-         -CPS,
-         -RSD,
-         -conc.dil.blanked, 
-         -conc.dil.blanked.error, 
-         -conc.dil,
-         -conc.dil.error)
+         -mass_of_soil,
+         -total_volume,
+         -cps,
+         -rsd,
+         -conc_dil_blanked, 
+         -conc_dil_blanked_error, 
+         -conc_dil,
+         -conc_dil_error)
 
 sample_data
 ```
@@ -258,8 +254,8 @@ remove(
        uncor_sample,
   #Values     
        unique_metal, 
-       conc.dil.blanked, 
-       conc.dil.blanked.error,
+       conc_dil_blanked, 
+       conc_dil_blanked_error,
        dil_1010_e,
        dil_e,
        keys,

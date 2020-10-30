@@ -15,10 +15,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #install.packages("tidyverse")
 #install.packages("readr")
+#install.packages("janitor")
 
 #loading the libraries
 library(tidyverse)
 library(readr)
+library(janitor)
+
 ```
 
 1) Importing the Data
@@ -101,17 +104,18 @@ ICPMS_tidy
 4) Merging in the Sample Key
 ```{r merging sample key}
 #Merging together the ICPMS Data and the Sample Key
-ICPMS_merged <- merge(ICPMS_tidy, sample_key)
+ICPMS <- merge(ICPMS_tidy, sample_key)%>%
+  clean_names()
 
 #Previewing the merged data
-ICPMS_merged
+ICPMS
 ```
 
 5) Removing clutter from the environment!
 
 ```{r, warning= FALSE}
 #Set warning=FALSE so the chunk will not notify you when an object is already removed from the environment
-rm(list=setdiff(ls(), "ICPMS_merged"))
+rm(list=setdiff(ls(), "ICPMS"))
 ```
 
 #See file 2 for the ICPMS data analysis example code!
