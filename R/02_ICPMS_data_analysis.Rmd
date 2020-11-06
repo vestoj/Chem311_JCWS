@@ -9,10 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
 library(tidyverse)
-library(readr)
 ```
 
 ```{r}
@@ -28,45 +25,42 @@ sample_sites <- unique(filter(ICPMS, site!="MB", site!="")$site)
 metals_analyzed <- unique(ICPMS$metal)
 
 #Preview the lists to check for potential issues:
-#sample_sites
-#metals_analyzed
+sample_sites
+metals_analyzed
 ```
 
 2) Calibrating the ICPMS Data 
 
 ```{r Calibration}
-
 ICPMS_cal <- NULL
-
 for (unique_metal in metals_analyzed){
 
   cal <- ICPMS %>% 
       filter(type == "Cal1" | type== "Cal2" | type == "Cal3") %>% 
       filter(metal == unique_metal) %>%
-      select(conc = concentration, signal = cps, rsd)
+      select(concentration, cps, rsd)
 
-  w <- 1/(cal$signal*cal$rsd)^2 
-  model <- lm(cal$signal ~ cal$conc, weights= w)
+  w <- 1/(cal$cps*cal$rsd)^2 
+  model <- lm(cal$cps ~ cal$concentration, weights= w)
 
   slope <- model$coefficients[2]
   intercept <- model$coefficients[1]
   slope_std <- summary(model)$coefficients[2,2]
   intercept_std <- summary(model)$coefficients[1,2]
 
-  plot(cal$signal ~ cal$conc,
+  plot(cal$cps ~ cal$concentration,
       xlab= paste("Concentration of ", unique_metal,"(ppb)"), #units from the standard solution prepared at OHSU (µg/L)
       ylab= "Counts per second")+ 
       abline(model, col="red")+ 
       title(paste("Calibration for", unique_metal)) 
 
-  equation <- data_frame(metal= unique_metal, slope, slope_std, intercept, intercept_std)
+  equation <- tibble(metal= unique_metal, slope, slope_std, intercept, intercept_std)
   ICPMS_cal <- rbind(ICPMS_cal, equation)
   }
 
 ICPMS_cal
-  
-  #Clearing the environment (optional, but helps to prevent accidentally using the wrong object!)
-  remove(equation, cal, slope, slope_std, intercept, intercept_std, w, model, unique_metal)
+#Clearing the environment (optional, but helps to prevent accidentally using the wrong object!)
+remove(equation, cal, slope, slope_std, intercept, intercept_std, w, model, unique_metal)
 ```
 
 3) Creating a function to analyze samples
@@ -78,7 +72,7 @@ sample_analysis <- function(unique_site){
   concentration_data <- NULL
   for (unique_metal in metals_analyzed){
     sample <- filter(ICPMS, metal == unique_metal, site == unique_site)
-    data <- NULL #only necessary for MB 
+    data <- NULL 
     
     for(ID in sample$sample_key){ 
       sample_data <- filter(sample, sample_key == ID)
@@ -104,7 +98,7 @@ sample_analysis <- function(unique_site){
       e_x <- x*sqrt((e_yb/yb)^2+(m_e/m)^2)
       #error in x from the calibration
       
-      data <- rbind(data, data_frame(sample_key = ID, x, e_x)) #storing for MB purposes
+      data <- rbind(data, data_frame(sample_key = ID, x, e_x)) 
       if (unique_site != "MB"){
         concentration_data <- data_frame(sample_key = sample_data$sample_key,
                                          analyst = sample_data$analyst,
@@ -144,21 +138,15 @@ run_sites <- function(Function){
 }
 ```
 
-5) Analyze the sample
 ```{r}
 MB <- sample_analysis("MB") #(ug/kg)
-
 uncor_sample <- run_sites(sample_analysis) #values do not account for dilutions (ug/kg)
-keys <- unique(uncor_sample$sample_key) #sample_keys that correspond to actual samples! 
-#(i.e. not QC, MB)
 
 MB
 uncor_sample
-keys
 ```
 
 ```{r}
-#2) Method Blank
 sample_data_mb <- NULL
 
 for (unique_metal in metals_analyzed){
@@ -211,7 +199,7 @@ mass_e <- .001
 dil_1010_e <- sqrt(1^2 + 10^2) 
 dil_e <- sqrt((dil_1010_e/1010)^2+(1/10)^2) #error in 101 dilution factor
 
-#3) Correct for dilution
+
 sample_data <- merge(ICPMS,sample_data_mb)%>% #This adds in important details such as soil mass
   unique()%>%
   mutate(conc_blanked= conc_dil_blanked*(total_volume/1000)/(mass_of_soil/1000)*101,
@@ -244,26 +232,7 @@ sample_data
 #Would you expect any of them to be large enough to impact the uncertainty? 
 
 ```{r, warning= FALSE}
-remove(
-  #Data
-       MB_metal, 
-       MB,
-       ICPMS_cal,
-       sample_data_mb,
-       sample_metal, 
-       uncor_sample,
-  #Values     
-       unique_metal, 
-       conc_dil_blanked, 
-       conc_dil_blanked_error,
-       dil_1010_e,
-       dil_e,
-       keys,
-       mass_e,
-       vol_e,
-  #functions
-       sample_analysis,
-       run_sites)
+rm(list= ls()[!(ls() %in% c("ICPMS","sample_data", "sample_sites","metals_analyzed" ))])
 ```
 
 #See file 3 for the ICPMS results (statistical analysis and visualization) example code!

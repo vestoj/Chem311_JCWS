@@ -109,6 +109,8 @@ ICPMS <- merge(ICPMS_tidy, sample_key)%>%
 
 #Previewing the merged data
 ICPMS
+
+write.csv(ICPMS,file="~/RStudio/projects/Chem311_JCWS/data/ICPMS_tidy_example.csv")
 ```
 
 5) Removing clutter from the environment!

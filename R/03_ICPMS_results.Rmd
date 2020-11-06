@@ -32,10 +32,10 @@ for(sites in sample_sites){
  site_data <- filter(sample_data, site==sites)%>%
     group_by(metal)%>%
     summarise(site=sites,
-              conc.blanked = mean(conc.blanked),
-              conc.blanked.error = propmean(e_x = conc.blanked.error, x = conc.blanked),
-              conc.unblanked = mean(conc.unblanked),
-              conc.unblanked.error = propmean(conc.unblanked.error, conc.unblanked))%>%
+              conc_blanked = mean(conc_blanked),
+              conc_blanked_error = sd(conc_blanked),
+              conc_unblanked = mean(conc_unblanked),
+              conc_unblanked_error = sd( conc_unblanked))%>%
    rbind(site_data)
 }
 
@@ -47,7 +47,7 @@ site_data
 ```{r}
 #testing out a plot idea
 site_data %>% filter(site=="A")%>%
-  ggplot(aes(metal, conc.blanked))+ 
+  ggplot(aes(metal, conc_blanked))+ 
   geom_col()
 
 #decided this wasn't the best decision, given that the concentration of lead extremely overshadows the other metals
@@ -59,13 +59,13 @@ for(metals in metals_analyzed){
  data <- site_data %>%
    filter(metal==metals, site != "QC")
    
-  plot <-  ggplot(data, aes(site, conc.blanked))+ 
+  plot <-  ggplot(data, aes(site, conc_blanked))+ 
     geom_col(fill="#003300")+
     labs( title=paste("Concentration of", metals, "in Johnson Creek Watershed Sites"),
           y= paste("Concentration of", metals, "(ppm)"), #double check unit!!
           x="Site along Johnson Creek Watershed")+     
-    geom_errorbar(ymin= data$conc.blanked - data$conc.blanked.error,
-                  ymax= data$conc.blanked + data$conc.blanked.error)+
+    geom_errorbar(ymin= data$conc_blanked - data$conc_blanked_error,
+                  ymax= data$conc_blanked + data$conc_blanked_error)+
     coord_cartesian(ylim = c(0, 350))
     
  print(plot)
@@ -80,13 +80,13 @@ Cd114 <-  site_data %>%
 
 png("Cd114.png", units="in", width=7, height=5, res=300)
 
-Cd114 <-  ggplot(Cd114, aes(site, conc.blanked))+ 
+Cd114 <-  ggplot(Cd114, aes(site, conc_blanked))+ 
   geom_col(fill="#003300")+
   labs(title="Concentration of Cd114 in Johnson Creek Watershed Sites",
         y= "Concentration of Cd114 (ppm)", 
         x="Site along Johnson Creek Watershed")+     
-  geom_errorbar(ymin= Cd114$conc.blanked - Cd114$conc.blanked.error,
-                max= Cd114$conc.blanked + Cd114$conc.blanked.error)+
+  geom_errorbar(ymin= Cd114$conc_blanked - Cd114$conc_blanked_error,
+                max= Cd114$conc_blanked + Cd114$conc_blanked_error)+
   coord_cartesian(ylim = c(0, 350))
 
 print(Cd114)
