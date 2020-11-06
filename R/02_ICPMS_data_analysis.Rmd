@@ -238,4 +238,6 @@ rm(list= ls()[!(ls() %in% c("ICPMS","sample_data", "sample_sites","metals_analyz
 
 #See file 3 for the ICPMS results (statistical analysis and visualization) example code!
 
-Changing code in R
+
+Changing code in R & Github (the change you actually want)
+
